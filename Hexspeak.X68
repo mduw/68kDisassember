@@ -2,10 +2,9 @@
 * Title      :  Hexspeak Disassembler
 * Written by :  Taylor Eyler, Mitchell Dang, Isabel Giang, Julia Brosseau
 * Date       :  July 19, 2020
-* Description:  This is the reverse assembler for the 
-*               Motorola MC68000 Microprocessor created as a 
-*               group project for CSS 422: Hardware and 
-*               Computer Organization at University of 
+* Description:  This is the reverse assembler for the Motorola MC68000
+*               Microprocessor created as a group project for CSS 422:
+*               Hardware and Computer Organization at University of 
 *               Washington Bothell taught by Professor Yang Peng.
 *------------------------------------------------------------------------
 CR          EQU         $0D
@@ -27,6 +26,7 @@ START       ORG         $1000
             TRAP        #15             ; READ START ADDRESS
             
             ; TODO: ERROR HANDLING/INPUT VALIDATION
+            ; TODO: STORE INPUT AND CONVERT ASCII TO HEX
 
             LEA         ENDADDR,A1      ; LOAD END PROMPT
             MOVE.B      #14,D0          ; USING TRAP TASK #14
@@ -35,7 +35,8 @@ START       ORG         $1000
             MOVE.B      #2,D0           ; USING TRAP TASK #2
             TRAP        #15             ; READ END ADDRESS   
 
-            ; TODO: ERROR HANDLING/INPUT VALIDATION         
+            ; TODO: ERROR HANDLING/INPUT VALIDATION
+            ; TODO: STORE INPUT AND CONVERT ASCII TO HEX         
         
             MOVE.B      #9,D0           ; USING TRAP TASK #9
             TRAP        #15             ; HALT SIMULATOR
@@ -46,6 +47,7 @@ ENDADDR     DC.B        'Enter an ending address in hexadecimal: ',0
 
             END         START
          
+
 
 
 *~Font name~Courier New~
