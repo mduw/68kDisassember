@@ -36,7 +36,9 @@ START       ORG         $1000
             TRAP        #15             ; READ END ADDRESS   
 
             ; TODO: ERROR HANDLING/INPUT VALIDATION
-            ; TODO: STORE INPUT AND CONVERT ASCII TO HEX         
+            ; TODO: STORE INPUT AND CONVERT ASCII TO HEX
+
+            ; TODO: PROMPT FOR ADDITIONAL SEARCH, LOOP TO START IF YES         
         
             MOVE.B      #9,D0           ; USING TRAP TASK #9
             TRAP        #15             ; HALT SIMULATOR
