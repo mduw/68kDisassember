@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------
 * Title      :  Hexspeak Disassembler
-* Written by :  Taylor Eyler, Mitchell Dang, Julia Brosseau, Andrew Goupinets
-* Date       :  July 28, 2020
+* Written by :  Taylor Eyler, Mitchell Dang, Julia Brosseau, Andrew Goupinets 
+* Date       :  July 19 - July 29, 2020
 * Description:  This is the reverse assembler for the Motorola MC68000
 *               Microprocessor created as a group project for CSS 422:
 *               Hardware and Computer Organization at University of 
@@ -9,7 +9,6 @@
 *------------------------------------------------------------------------
 CR          EQU         $0D
 LF          EQU         $0A
-
 
 
 START       ORG         $1000
@@ -67,13 +66,13 @@ DONE        MOVE.B      #9,D0           ; USING TRAP TASK #9
             TRAP        #15             ; HALT SIMULATOR
             
             
-RESETVALUES CLR.L   D0                  ; CLEAR ALL VALUES
-            CLR.L   D1                  ; NOTE: IN THE FUTURE ANY ADDITIONAL REGISTERS
-            CLR.L   D2                  ;       USED CAN BE CLEARED HERE TOO
-            MOVE.L  #0,A1
-            MOVE.L  #0,A2
-            MOVE.L  #0,A3   
-            JMP WELC                    ; GO BACK TO THE START     
+RESETVALUES CLR.L       D0                  ; CLEAR ALL VALUES
+            CLR.L       D1                  ; NOTE: IN THE FUTURE ANY ADDITIONAL REGISTERS
+            CLR.L       D2                  ; USED CAN BE CLEARED HERE TOO
+            MOVE.L      #0,A1
+            MOVE.L      #0,A2
+            MOVE.L      #0,A3   
+            JMP         WELC                ; GO BACK TO THE START     
             
 * ================== INCLUDE MODULES ================== *
             INCLUDE     'IO_func.X68'
