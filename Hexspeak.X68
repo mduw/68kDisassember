@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------
 * Title      :  Hexspeak Disassembler
-* Written by :  Taylor Eyler, Mitchell Dang, Isabel Giang, Julia Brosseau
-* Date       :  July 19, 2020
+* Written by :  Taylor Eyler, Mitchell Dang, Julia Brosseau, Andrew Goupinets
+* Date       :  July 28, 2020
 * Description:  This is the reverse assembler for the Motorola MC68000
 *               Microprocessor created as a group project for CSS 422:
 *               Hardware and Computer Organization at University of 
