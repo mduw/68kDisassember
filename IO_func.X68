@@ -1,7 +1,7 @@
 *-----------------------------------------------------------
-* Title      :  Subroutines for I/O
+* Title      :  Subroutines for I/O : ASCII to HEX, HEX (WORD) to ASCII, and HEX (LONG) to ASCII
 * Written by :  Mitchell, Julia
-* Date       :  07/27/2020
+* Date       :  07/28/2020
 * Description:  This file contains subroutines that support I/O process
 *-----------------------------------------------------------
 
@@ -76,52 +76,107 @@ DISP        MOVE.B      (A3),D0 ; OUTPUT STRING IN HEX
 * ================== END OF SUBROUTINE TO CONVERT ASCII TO HEX ================== *
 
 
-* ================== START OF SUBROUTINE TO CONVERT HEX TO ASCII ================== *   
-* INSTUCTION: PUT VALUE IN HEX INTO D3 REGISTER AND IT WILL PROCESS IT TO ASCII 
-* FINAL RESULT IN ASCII IS STORED IN A1 AND HEXTOASCII1   
-* USES D4 FOR ITS COUNTER 
-            MOVE.B      #$4, D4         ; 4 IS THE COUNTER SINCE WE OPERATE ON THE WORD                
-                    
-            LEA         ASCIIFROMHEX,A1 ; LOAD ADDRESS OF ASCIIFROMHEX TO A1
-            MOVE.L      #$A2F2,D3       ; TEST VALUE OF $ACF2 IS USED 
-            JSR         HEXTOASCII      ; JUMP TO SUBROUTINE THAT CONVERTS WORD IN HEX TO ASCII VALUE
-        
-HEXTOASCII: ROL.W       #4, D3          ; SHIFTS BITS TO LEFT AND ROTATES. FIRST BIT BECOMES LAST
+
+* ================== START OF SUBROUTINE TO CONVERT LONG HEX TO ASCII ================== * 
+* INPUT: D3 REGISTER MUST HAVE THE HEX VALUE
+* OUTPUT: L_HEX2ASCII_RESULT VALUE AND A1 REGISTER    
+* REGISTERS USED: D4 FOR COUNTER
+                ; D2 FOR COPY OF D3 INPUT VALUE
+ 
+*------ DEMO OF TEST SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION)----------------------*  
+*            LEA         L_HEX2ASCII_RESULT, A1    ; LOAD ADDRESS OF ASCIIFROMHEX TO A1
+*            MOVE.L      #$92FC04BF,D3                 ; TEST VALUE OF '92FC04BF' IN HEX IS USED 
+*            JSR         L_HEXTOASCII              ; JUMP TO SUBROUTINE THAT CONVERTS WORD IN HEX TO ASCII VALUE            
+*            LEA         L_HEX2ASCII_RESULT, A1    ; WILL DISPLAY THE ASCII VALUE 
+*            MOVE.L      #13, D0                   ; USED FOR TRAP #15
+*            TRAP        #15                       ; PRINT VALUE IN A1 
+*------ END OF DEMO OF SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION) -----------------* 
+             
+L_HEXTOASCII:
+            MOVE.B      #$8, D4         ; 8 IS THE COUNTER (LIMIT) SINCE WE OPERATE ON THE LONG                
+            BRA         W_HEXTOASCII_LOOP   ; EXECUTE LOOP THAT CONVERTS HEX TO ASCII
+            RTS                         ; RETURN FROM SUBROUTINE 
+ 
+L_HEXTOASCII_LOOP:    
+            ROL.W       #8, D3          ; SHIFTS BITS TO LEFT AND ROTATES. FIRST BIT BECOMES LAST
             MOVE.W      D3,D2           ; STORE COPY AT D2 WHICH WILL HAVE BITS SHIFTED
             AND.L       #$0000000F,D2   ; UPDATE ADD BITS TO 0 EXCEPT FOR LAST ONE
-            CMP.B       #9, D2          ; CHECK IF MORE THAN 9 
-            BGT         ISLETTER
+            CMP.B       #9, D2          ; CHECK IF MORE THAN 9 (10 IS A, ETC)
+            BGT         L_ISLETTER      ; CONVERT LETTER BASED ON ASCII TABLE
+            
+L_ISDIGIT     ADD.W       #$30,D2         ; IS A NUMBER, SO ADD #$30 PER ASCII TABLE
+            BRA         NEXT_L_H2A      ; CONTINUE AFTER DIGIT CONVERSION
+            
+L_ISLETTER    ADD.W       #$37,D2         ; IS A CHAR (IS AT LEAST 10), SO ADD $37 (65-10=55 IN DECIMAL WHICH IS $37)
+            BRA         NEXT_L_H2A      ; CONVERT THE LETTER TO ASCII LETTER             
+            
+NEXT_L_H2A  MOVE.B      D2, (A1)+       ; STORE EACH BIT TO A1 IN RIGHT ORDER
+            SUBQ        #1, D4          ; DECREMENT COUNTER
+            CMP.B       #0, D4          ; CHECK IF END OF LOOP
+            BNE         L_HEXTOASCII_LOOP   ; IF NOT, LOOP AGAIN
+            
+            MOVE.B      #0, (A1)        ; ASCII IS COMPLETE. PLACES NULL AT THE END OF STRING. 
+            SUB         #$8, A1         ; RETURNS TO THE START OF THE STRING 
+            LEA         L_HEX2ASCII_RESULT, A1 ; LOAD ADDRESS OF ASCIIFROMHEX TO A1 - STORE RESULT
+            RTS                        ; RETURN FROM SUBROUTINE
+                                          
+* ================== END OF SUBROUTINE TO CONVERT LONG HEX TO ASCII ================== * 
+
+
+* ================== START OF SUBROUTINE TO CONVERT WORD HEX TO ASCII ================== * 
+* INPUT: D3 REGISTER MUST HAVE THE HEX VALUE
+* OUTPUT: W_HEX2ASCII_RESULT VALUE AND A1 REGISTER    
+* REGISTERS USED: D4 FOR COUNTER
+                ; D2 FOR COPY OF D3 INPUT VALUE
+ 
+*------ DEMO OF TEST SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION)----------------------*  
+*            LEA         W_HEX2ASCII_RESULT, A1    ; LOAD ADDRESS OF W_HEX2ASCII_RESULT TO A1
+*            MOVE.L      #$A2FC,D3                 ; TEST VALUE OF 'A2FC' IN HEX IS USED 
+*            JSR         W_HEXTOASCII              ; JUMP TO SUBROUTINE THAT CONVERTS WORD IN HEX TO ASCII VALUE            
+*            LEA         W_HEX2ASCII_RESULT, A1    ; WILL DISPLAY THE ASCII VALUE 
+*            MOVE.L      #13, D0                   ; USED FOR TRAP #15
+*            TRAP        #15                       ; PRINT VALUE IN A1 
+*------ END OF DEMO OF SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION) -----------------*   
+          
+W_HEXTOASCII:
+            MOVE.B      #$4, D4         ; 4 IS THE COUNTER (LIMIT) SINCE WE OPERATE ON THE WORD                
+            BRA         W_HEXTOASCII_LOOP   ; EXECUTE LOOP THAT CONVERTS HEX TO ASCII
+            RTS                         ; RETURN FROM SUBROUTINE 
+ 
+W_HEXTOASCII_LOOP:    
+            ROL.L       #4, D3          ; SHIFTS BITS TO LEFT AND ROTATES. FIRST BIT BECOMES LAST
+            MOVE.W      D3,D2           ; STORE COPY AT D2 WHICH WILL HAVE BITS SHIFTED
+            AND.L       #$0000000F,D2   ; UPDATE ADD BITS TO 0 EXCEPT FOR LAST ONE
+            CMP.B       #9, D2          ; CHECK IF MORE THAN 9 (10 IS A, ETC)
+            BGT         ISLETTER        ; CONVERT LETTER BASED ON ASCII TABLE
             
 ISDIGIT     ADD.W       #$30,D2         ; IS A NUMBER, SO ADD #$30 PER ASCII TABLE
-            BRA         NEXT
+            BRA         NEXT_W_H2A      ; CONTINUE AFTER DIGIT CONVERSION
             
-ISLETTER    ADD.W       #$37,D2
-            BRA         NEXT            ; CONVERT THE LETTER TO ASCII LETTER             
+ISLETTER    ADD.W       #$37,D2         ; IS A CHAR (IS AT LEAST 10), SO ADD $37 (65-10=55 IN DECIMAL WHICH IS $37)
+            BRA         NEXT_W_H2A      ; CONVERT THE LETTER TO ASCII LETTER             
             
-NEXT        MOVE.B      D2, (A1)+
-            SUBQ        #1, D4
-            CMP.B       #0, D4
-            BNE         HEXTOASCII  
+NEXT_W_H2A  MOVE.B      D2, (A1)+       ; STORE EACH BIT TO A1 IN RIGHT ORDER
+            SUBQ        #1, D4          ; DECREMENT COUNTER
+            CMP.B       #0, D4          ; CHECK IF END OF LOOP
+            BNE         W_HEXTOASCII_LOOP   ; IF NOT, LOOP AGAIN
             
-            MOVE.B      #0, (A1)        ; ASCII IS COMPLETE. PLACES NULL AT THE END OF STRING.             
-           ; RTS                        ; RETURN FROM SUBROUTINE
+            MOVE.B      #0, (A1)        ; ASCII IS COMPLETE. PLACES NULL AT THE END OF STRING. 
+            SUB         #$4,A1          ; RETURNS TO THE START OF THE STRING 
+            LEA         W_HEX2ASCII_RESULT, A1 ; LOAD ADDRESS OF ASCIIFROMHEX TO A1 - STORE RESULT
+            RTS                        ; RETURN FROM SUBROUTINE
             
-*------ TEST CASE 1 OF CONVERTING WORD TO ASCII ------*
-            LEA         ASCIIFROMHEX, A1    ; WILL DISPLAY THE ASCII VALUE 
-            MOVE.L      #13, D0
-            TRAP        #15 
-                        
-* ================== END OF SUBROUTINE TO CONVERT HEX TO ASCII ================== * 
-
+                                
+* ================== END OF SUBROUTINE TO CONVERT WORD HEX TO ASCII ================== * 
 
 
 * ================== CONSTANTS GO HERE ================== *
 
 ERRMESS         DC.B        'Error! Invalid address',CR,LF,0
-ASCIIFROMHEX    DS.B        10 
 DISP_D2H        DC.B        'String-type addr in hex: ',0
 
-
+W_HEX2ASCII_RESULT    DS.L        1
+L_HEX2ASCII_RESULT    DS.L        1
 
 
 
