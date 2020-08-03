@@ -25,6 +25,7 @@ STADDR      LEA         STARTADDR,A1    ; LOAD START PROMPT
             
             MOVE.B      #2,D0           ; USING TRAP TASK #2
             TRAP        #15             ; READ START ADDRESS
+            JSR         ASCII2HEX	; Convert starting address to hex. Stored at D3
             
             ; TODO: ERROR HANDLING/INPUT VALIDATION
             ; TODO: STORE INPUT AND CONVERT ASCII TO HEX
@@ -91,6 +92,7 @@ USERRESPONSE    DC.B    '',0
 
             END         START
          
+
 
 
 

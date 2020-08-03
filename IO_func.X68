@@ -1,11 +1,9 @@
 *-----------------------------------------------------------
 * Title      :  Subroutines for I/O : ASCII to HEX, HEX (WORD) to ASCII, and HEX (LONG) to ASCII
 * Written by :  Mitchell, Julia
-* Date       :  07/28/2020
+* Date       :  07/28/2020 - 08/02/2020
 * Description:  This file contains subroutines that support I/O process
 *-----------------------------------------------------------
-
-A2H_RESULT  EQU         $2000   ; OUTPUT'S ADDR FOR THE ASCII-TO-HEX CONVERSION
 
 
 
@@ -25,16 +23,23 @@ A2H_RESULT  EQU         $2000   ; OUTPUT'S ADDR FOR THE ASCII-TO-HEX CONVERSION
 * ================== START OF SUBROUTINE TO CONVERT ASCII TO HEX ================== *
 * NOTE FOR IMPLEMENTATION: 
 *       1. Input's location is held by A2. 
-*       2. Output's location is held by A3.
+*       2. Output's location is held by D3.
 *       3. Length of the hex value is held by D1. (Input's location + Length = location of the last bit)
 *
-ASCII2HEX:  MOVE.L      A1,A2           ; COPY INPUT ADDR TO A2
-            LEA         A2H_RESULT,A3   ; ADDR WHERE RESULT WILL BE STORED 
-            JSR         A2HLOOP         ; START THE LOOP THAT CONVERT EACH STRING CHAR TO HEX
-            LEA         A2H_RESULT,A3   ; ADDR WHERE RESULT WILL BE STORED        
+ASCII2HEX:  LEA         (A1),A2         ; COPY INPUT ADDR TO A2
+            JSR         RmLeadZero
+            JSR         A2HLOOP         ; START THE LOOP THAT CONVERT EACH STRING CHAR TO HEX     
+            CLR         D2              ; CLEAR D2 AFTER SUBROUTINE
             RTS  
-                       
-A2HLOOP     CLR.B       D2
+            
+RmLeadZero  SUB.B       #1,D1           ; REMOVE LEADING ZERO BEFORE CONVERTING TO HEX
+            CMP.B       #$30,(A2)+
+            BEQ         RmLeadZero        
+            MOVE.B      -(A2),D2
+            ADD.B       #1,D1
+            CLR         D2
+            RTS                                                  
+A2HLOOP     CLR         D2
             MOVE.B      (A2)+,D2
             CMP.B       #$0,D2
             BEQ         EXIT_A2HL       ; $00 END OF STRING. BRANCH TO DISPLAYING RESULT
@@ -45,19 +50,20 @@ A2HLOOP     CLR.B       D2
             BLT         A2H_ERR         ; less than $30 ('0') ==> invalid
             CMP.B       #$46,D2         ; CHARACTER NOT IN [1..9] AND [A,Z]
             BGT         A2H_ERR         ; greater than $46 ('F') ==> invalid
-
             CMP.B       #$39,D2            
             BLE         D2H1            ; start converting number in range [$30,$39] ~ ['0'-'9']
-            BGT         D2H2            ; start converting number in range [$41,$46] ~ ['A'-'Z']
+            BGT         D2H2            ; start converting number in range [$41,$46] ~ ['A'-'Z']           
 
 D2H1        SUB.B       #$30,D2         ; SUBTRACT $30
-            MOVE.B      D2,(A3)+        ; MOVE CONVERTED VALUE TO RESULT
+            ASL.L       #4,D3
+            ADD.B       D2,D3            
             BRA         NEXT_CHAR 
 
 D2H2        CMP.B       #$41,D2
             BLT         A2H_ERR         ; ERR IF $39 < D2 < $41 --> INVALID CHARACTERS
             SUB.B       #$37,D2         ; SUBTRACT $37 IF D2 IS IN [$41,$46] ~ ['A'-'Z']
-            MOVE.B      D2,(A3)+        ; MOVE CONVERTED VALUE TO RESULT
+            LSL.W       #4,D3
+            ADD.B       D2,D3
             BRA         NEXT_CHAR             
      
 NEXT_CHAR   BRA         A2HLOOP         ; CONTINUE CONVERTING  
@@ -67,8 +73,7 @@ A2H_ERR     LEA         ERRMESS,A1      ; DISPLAY  ERR MESSAGE. CHARACTER NOT IN
             *MOVE.B      #14,D0
             *TRAP        #15
             RTS
-            
-DISP        MOVE.B      (A3),D0 ; OUTPUT STRING IN HEX   
+DISP        LEA         (A3),A1 ; OUTPUT STRING IN HEX   
             MOVE.B      #13,D0
             TRAP        #15
             RTS
@@ -177,6 +182,9 @@ DISP_D2H        DC.B        'String-type addr in hex: ',0
 
 W_HEX2ASCII_RESULT    DS.L        1
 L_HEX2ASCII_RESULT    DS.L        1
+
+
+
 
 
 
