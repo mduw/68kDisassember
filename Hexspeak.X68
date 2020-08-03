@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------
 * Title      :  Hexspeak Disassembler
 * Written by :  Taylor Eyler, Mitchell Dang, Julia Brosseau, Andrew Goupinets 
-* Date       :  July 19 - July 29, 2020
+* Date       :  July 19 - August 3, 2020
 * Description:  This is the reverse assembler for the Motorola MC68000
 *               Microprocessor created as a group project for CSS 422:
 *               Hardware and Computer Organization at University of 
@@ -9,6 +9,8 @@
 *------------------------------------------------------------------------
 CR          EQU         $0D
 LF          EQU         $0A
+DOLLAR      EQU         $24
+TAB         EQU         $09
 
 
 START       ORG         $1000
@@ -25,11 +27,14 @@ STADDR      LEA         STARTADDR,A1    ; LOAD START PROMPT
             
             MOVE.B      #2,D0           ; USING TRAP TASK #2
             TRAP        #15             ; READ START ADDRESS
-            JSR         ASCII2HEX	; Convert starting address to hex. Stored at D3
             
             ; TODO: ERROR HANDLING/INPUT VALIDATION
-            ; TODO: STORE INPUT AND CONVERT ASCII TO HEX
 
+            JSR         ASCII2HEX	    ; Convert starting address to hex. Stored at D3
+            LEA         START_ADDRESS, A2   ; START_ADDRESS WILL TO BE ASSOCIATED WITH A2
+            JSR         L_HEXTOASCII    ; CONVERTS HEX IN D3 TO ASCII INTO A2           
+            LEA         START_ADDRESS, A2   ; SAVES RESULT OF HEX TO ASCII CONVERSION TO START_ADDRESS VARIABLE
+       
 EADDR       LEA         ENDADDR,A1      ; LOAD END PROMPT
             MOVE.B      #14,D0          ; USING TRAP TASK #14
             TRAP        #15             ; OUTPUT END PROMPT
@@ -39,8 +44,18 @@ EADDR       LEA         ENDADDR,A1      ; LOAD END PROMPT
             TRAP        #15             ; READ END ADDRESS   
 
             ; TODO: ERROR HANDLING/INPUT VALIDATION
-            ; TODO: STORE INPUT AND CONVERT ASCII TO HEX
-
+            
+            JSR         ASCII2HEX	    ; Convert starting address to hex. Stored at D3
+            LEA         END_ADDRESS, A2   ; START_ADDRESS WILL TO BE ASSOCIATED WITH A2
+            JSR         L_HEXTOASCII    ; CONVERTS HEX IN D3 TO ASCII INTO A2 AND L_HEX2ASCII_RESULT                  
+            LEA         END_ADDRESS, A2   ; SAVES RESULT OF HEX TO ASCII CONVERSION TO START_ADDRESS
+            
+            ; TODO: PRINT $,ADDRESS INCREMENTED, OPCODE AND REGISTERS
+            ; RIGHT NOW PRINTS $ ONLY
+            MOVEA.L     #0,A1  
+            LEA         LINETOPRINT, A1      ; LOAD CONSTANT WITH $ AND NEW LINE
+            MOVE.B      #14,D0          ; USING TRAP TASK #14
+            TRAP        #15             ; OUTPUT END PROMPT   
 
             ; TODO: PROMPT FOR ADDITIONAL SEARCH, LOOP TO START IF YES 
 GOAGAIN     LEA         AGAINPROMPT,A1  ; LOAD AGAIN PROMPT
@@ -86,7 +101,10 @@ WELCOME     DC.B        'Welcome to the Hexspeak disassembler.',CR,LF,0
 STARTADDR   DC.B        'Enter a starting address in hexadecimal: ',0
 ENDADDR     DC.B        'Enter an ending address in hexadecimal: ',0
 AGAINPROMPT DC.B        'Would you like to search again? (Y/N) ',0
+LINETOPRINT DC.B        DOLLAR, CR, LF, 0
 USERRESPONSE    DC.B    '',0
+START_ADDRESS   DS.L    1
+END_ADDRESS     DS.L    1
 * ======================== END ======================== *
 
 
