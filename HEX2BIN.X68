@@ -10,15 +10,15 @@
 
 *=========  START OF TEST FOR HEX2BIN (TO BE REMOVED) =========*   
             ; convert every 2 hex bits. Each bit in hex = 4 bits in binary         
-            MOVE.W  #$1100,A3
-            MOVE.W  #$13B2,(A3)
-            MOVE.W  #$1120,A2           ; addr where output is located
+*            MOVE.W  #$1100,A3
+*            MOVE.W  #$13B2,(A3)
+*            MOVE.W  #$1120,A2           ; addr where output is located
             
-            MOVE.B  (A3)+,D2            ; convert every 2 hex bits.           
-            JSR     HEX2BIN             ; convert to binary
-            MOVE.B  (A3)+,D2
-            JSR     HEX2BIN
-            BRA     DONE                ; finish
+*            MOVE.B  (A3)+,D2            ; convert every 2 hex bits.           
+*            JSR     HEX2BIN             ; convert to binary
+*            MOVE.B  (A3)+,D2
+*            JSR     HEX2BIN
+*            BRA     DONE                ; finish
 *=========  END OF TEST FOR HEX2BIN =========*   
 
 *=========  START OF SUBROUTINE FOR HEX2BIN  =========*   
