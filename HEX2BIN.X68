@@ -7,15 +7,15 @@
 
 HEX2BIN_RSLT  EQU     $2000
 
-    ORG    $1000 			; uncomment for debugging
-START:      				; uncomment for debugging
+*    ORG    $1000 			; uncomment for debugging
+*START:      				; uncomment for debugging
 
 *=========  START OF TEST FOR HEX2BIN (TO BE REMOVED) =========*   
             ; convert every 2 hex bits. Each bit in hex = 4 bits in binary         
 *            MOVE.L  #$1100,A3
 *            MOVE.W  #$13B2,(A3)
 *            LEA     HEX2BIN_RSLT,A2     ; addr where output is located
-*            
+            
 *            MOVE.B  (A3)+,D2            ; convert every 2 hex bits.           
 *            JSR     HEX2BIN             ; convert to binary
 *            MOVE.B  (A3)+,D2
@@ -27,6 +27,16 @@ START:      				; uncomment for debugging
 * Note for implementation:
 *   1. Input:  move data to D2
 *   2. Output: located at given addr.
+*
+*
+*   EXTRA DOCUMENTATION:
+*               MOVE.L      #$1100,A3       ; ADDRESS WHERE CONVERSION TAKES PLACE
+*               MOVE.L      D2,(A3)         ; MOVE REGISTER VALUE INTO A3 ADDRESS
+*               MOVEA.L     #$2000,A2       ; WHERE CONVERSION WILL SAVE TO
+*               JSR         HEX2BIN         ; CONVERTS TWO VALUES OF HEX INTO EIGHT BINARY BITS
+*               MOVE.L      $2000,D2        ; MOVES CONVERTED VALUE INTO D2
+*
+*           Make sure you include similar logic prior to entering into HEX2BIN
 
 HEX2BIN:    MOVE.B  D2,-(SP)        
             CLR     D1                  ; reset counter D1 to 0. every 1 hex digit ~ 4 digits in binary   
@@ -77,16 +87,10 @@ doswap      SWAP    D3
 *=========  END OF SUBROUTINE FOR HEX2BIN  =========*              
           
     
-DONE        SIMHALT             ; uncomment for debugging if needed
+*DONE        SIMHALT             ; uncomment for debugging if needed
 
 
-      	     END    START        ; uncomment for debugging if needed
-
-
-
-
-
-
+      	     *END    START        ; uncomment for debugging if needed
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
