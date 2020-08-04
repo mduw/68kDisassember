@@ -5,15 +5,17 @@
 * Description: This subroutine is part of opcode decoding
 *-----------------------------------------------------------
 
-;    ORG    $1000 			; uncomment for debugging
-; START:      				; uncomment for debugging
+HEX2BIN_RSLT  EQU     $2000
+
+    ORG    $1000 			; uncomment for debugging
+START:      				; uncomment for debugging
 
 *=========  START OF TEST FOR HEX2BIN (TO BE REMOVED) =========*   
             ; convert every 2 hex bits. Each bit in hex = 4 bits in binary         
-*            MOVE.W  #$1100,A3
+*            MOVE.L  #$1100,A3
 *            MOVE.W  #$13B2,(A3)
-*            MOVE.W  #$1120,A2           ; addr where output is located
-            
+*            LEA     HEX2BIN_RSLT,A2     ; addr where output is located
+*            
 *            MOVE.B  (A3)+,D2            ; convert every 2 hex bits.           
 *            JSR     HEX2BIN             ; convert to binary
 *            MOVE.B  (A3)+,D2
@@ -24,7 +26,7 @@
 *=========  START OF SUBROUTINE FOR HEX2BIN  =========*   
 * Note for implementation:
 *   1. Input:  move data to D2
-*   2. Output: located at given addr. 1120 for testing. 
+*   2. Output: located at given addr.
 
 HEX2BIN:    MOVE.B  D2,-(SP)        
             CLR     D1                  ; reset counter D1 to 0. every 1 hex digit ~ 4 digits in binary   
@@ -46,7 +48,7 @@ HEX2BIN:    MOVE.B  D2,-(SP)
                
 HCHAR2BIN   MOVE.B  D2,-(SP)            ; store a copy of d2 
             AND.B   #1,D2               
-            BEQ.S   rec_zero            ; if Z flag (zero) is set to 1. which means D2 is an even ==> D2 % 2 =0
+            BEQ     rec_zero            ; if Z flag (zero) is set to 1. which means D2 is an even ==> D2 % 2 =0
             BNE     rec_one             ; otherwise, D2 is an odd ==>  D2 % 2 = 1
 isZero      ADD.B   #1,D1               ; record a  new binary is added to D1. 
             MOVE.B  (SP)+,D2            ; get the last D2 
@@ -75,10 +77,12 @@ doswap      SWAP    D3
 *=========  END OF SUBROUTINE FOR HEX2BIN  =========*              
           
     
-; DONE        SIMHALT             ; uncomment for debugging if needed
+DONE        SIMHALT             ; uncomment for debugging if needed
 
 
-      	    ; END    START        ; uncomment for debugging if needed
+      	     END    START        ; uncomment for debugging if needed
+
+
 
 
 
