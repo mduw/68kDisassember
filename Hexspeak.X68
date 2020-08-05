@@ -9,6 +9,7 @@
 *------------------------------------------------------------------------
 CR          EQU         $0D
 LF          EQU         $0A
+DOLLAR      EQU         $24
 
 
 START       ORG         $1000
@@ -54,6 +55,28 @@ STOREENDADD
             LEA         END_ADDRESS, A2   ; SAVES END ADDRESS IN ASCII 
             
             ; TODO: PRINT $,ADDRESS INCREMENTED, OPCODE AND REGISTERS
+           
+*--- EXPECTED TO PRINT "$(ADDRESS)(TAB)(DECODED OPCODE)(TAB)(EAS IF APPLICABLE)(NEW LINE)(#0)----*
+*--- RIGHT NOW PRINTS $ + START ADDRESS----*
+PRINTDECODEDLINE
+            CLR         (A6)            ; CLEAR CONTENTS OF A6 IN PREP (IN CASE STORED PREVIOUS LINE)
+            MOVE.B      #DOLLAR,(A6)+  ; ADD $ AT THE BEGINNING OF THE LINE 
+            
+ADDADDRESSTOLINE
+            ADDQ        #$8, D7          ; ADDRESS WILL ALWAYS NEED TO BE LONG, SO ADD 8 TO CHAR COUN
+                      
+ADDADDRESSLOOP           
+            MOVE.B      (A2)+, (A6)+    ; CARRY OVER ONE CHAR AT A TIME FROM A4 TO A6
+            BNE.S       ADDADDRESSLOOP   ; TEST FOR END OF STRING, CONTINUE IF NOT
+                       
+            MOVE.B      #0, (A6)        ; MUST HAVE 0 AT THE END OF THE STRING
+ 
+            SUBQ        #$1,A6          ; GET BACK TO THE START OF A6 BY SUBBTRACTING THE $ CHAR
+            SUB         #$9, A6         ; GET BACK TO THE START OF A6 BY SUBTRACTING THE LONG ADDRESS SPACE + NULL TERMINATOR
+           
+            LEA         (A6),A1         ; PRINT CONTENTS OF A6 
+            MOVE.L      #13, D0
+            TRAP        #15     
 
             ; TODO: PROMPT FOR ADDITIONAL SEARCH, LOOP TO START IF YES 
 GOAGAIN     LEA         AGAINPROMPT,A1  ; LOAD AGAIN PROMPT
