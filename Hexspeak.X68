@@ -9,8 +9,6 @@
 *------------------------------------------------------------------------
 CR          EQU         $0D
 LF          EQU         $0A
-DOLLAR      EQU         $24
-TAB         EQU         $09
 
 
 START       ORG         $1000
@@ -30,10 +28,13 @@ STADDR      LEA         STARTADDR,A1    ; LOAD START PROMPT
             
             ; TODO: ERROR HANDLING/INPUT VALIDATION
 
+
+STORESTARTADD
             JSR         ASCII2HEX	    ; Convert starting address to hex. Stored at D3
+            MOVE.L      D3, D5          ; STORES START ADDRESS IN HEX INTO D5
             LEA         START_ADDRESS, A2   ; START_ADDRESS WILL TO BE ASSOCIATED WITH A2
             JSR         L_HEXTOASCII    ; CONVERTS HEX IN D3 TO ASCII INTO A2           
-            LEA         START_ADDRESS, A2   ; SAVES RESULT OF HEX TO ASCII CONVERSION TO START_ADDRESS VARIABLE
+            LEA         START_ADDRESS, A2   ; SAVES START ADDRESS IN ASCII FORMAT
        
 EADDR       LEA         ENDADDR,A1      ; LOAD END PROMPT
             MOVE.B      #14,D0          ; USING TRAP TASK #14
@@ -45,17 +46,14 @@ EADDR       LEA         ENDADDR,A1      ; LOAD END PROMPT
 
             ; TODO: ERROR HANDLING/INPUT VALIDATION
             
+STOREENDADD            
             JSR         ASCII2HEX	    ; Convert starting address to hex. Stored at D3
+            MOVE.L      D3, D6          ; STORES END ADDRESS IN HEX INTO D6
             LEA         END_ADDRESS, A2   ; START_ADDRESS WILL TO BE ASSOCIATED WITH A2
             JSR         L_HEXTOASCII    ; CONVERTS HEX IN D3 TO ASCII INTO A2 AND L_HEX2ASCII_RESULT                  
-            LEA         END_ADDRESS, A2   ; SAVES RESULT OF HEX TO ASCII CONVERSION TO START_ADDRESS
+            LEA         END_ADDRESS, A2   ; SAVES END ADDRESS IN ASCII 
             
             ; TODO: PRINT $,ADDRESS INCREMENTED, OPCODE AND REGISTERS
-            ; RIGHT NOW PRINTS $ ONLY
-            MOVEA.L     #0,A1  
-            LEA         LINETOPRINT, A1      ; LOAD CONSTANT WITH $ AND NEW LINE
-            MOVE.B      #14,D0          ; USING TRAP TASK #14
-            TRAP        #15             ; OUTPUT END PROMPT   
 
             ; TODO: PROMPT FOR ADDITIONAL SEARCH, LOOP TO START IF YES 
 GOAGAIN     LEA         AGAINPROMPT,A1  ; LOAD AGAIN PROMPT
@@ -101,7 +99,6 @@ WELCOME     DC.B        'Welcome to the Hexspeak disassembler.',CR,LF,0
 STARTADDR   DC.B        'Enter a starting address in hexadecimal: ',0
 ENDADDR     DC.B        'Enter an ending address in hexadecimal: ',0
 AGAINPROMPT DC.B        'Would you like to search again? (Y/N) ',0
-LINETOPRINT DC.B        DOLLAR, CR, LF, 0
 USERRESPONSE    DC.B    '',0
 START_ADDRESS   DS.L    1
 END_ADDRESS     DS.L    1
