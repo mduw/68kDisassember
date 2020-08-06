@@ -53,6 +53,17 @@ NAME_A5         DC.B    'A5',0
 NAME_A6         DC.B    'A6',0
 NAME_A7         DC.B    'A7',0
 *========= END OF REGISTERS =========*
+
+*========= START OF SPECIAL CHARACTERS =========*
+NAME_OPENPAR    DC.B    '(',0
+NAME_CLOSEPAR   DC.B    ')',0
+NAME_HASH       DC.B    '#',0
+
+*========= END OF SPECIAL CHARACTERS =========*
+ 
+
+
+
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
