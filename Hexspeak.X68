@@ -89,17 +89,88 @@ ADDADDRINTOLINE:
 ADDRTOLINELOOP:        
             MOVE.B      (A2)+, (A6)+    ; CARRY OVER ONE CHAR AT A TIME FROM A2 TO A6
             BNE.S       ADDRTOLINELOOP  ; TEST FOR END OF STRING, CONTINUE IF NOT   
-            MOVE.B      #TAB,(A6)+   ; KEEP ON ADDING WHAT YOU WANT TO PRINT 
+            SUBQ        #$1, A6         ; REMOVE THE NULL TERMINATOR FROM CARRIED OVER ADDRESS
+            MOVE.B      #TAB,(A6)+      ; KEEP ON ADDING WHAT YOU WANT TO PRINT 
+            
+            ; CHECK IF CONTENT OF (A4) IS NOT #$0000FFFF (WHICH INDICATES THAT IT IS END OF FILE OR INVALID OPCODE)
 
             ; GO TO THE SUBROUTINES FOR THE OP CODES  
             ;NEED TO PUT 4 HEX VALUES INTO D2 FOR PROCESSING ->
             ; SO SAY AT LOCATION $9000 WE HAVE '4E71' SO NEED TO MOVE IT TO D2
             ; 9000 IS INCREMENTED WITH EACH LOOP AND SAVED IN D5 AND A4
             ; the code below works, but need to have the confirmation from the opcodes before calling it
-SENDTOOPCODES: 
-           ; MOVE.W  (A4),D2      ; MOVE CONTENTS OF CURRENT LOCATION TO DECOPE THE OPCODE
-           ; AND.L  #$0000FFFF,D2 ; ENSURE THAT ONLY SEND 4 HEX DIGITS AT A TIME
-           ; JSR CHECKOPCODE ; GO TO DECODE THE 4 HEX VALUES GIVEN TO IT                        
+
+ISOPCODEVALID:
+            MOVE.W  (A4),D2      ; MOVE CONTENTS OF CURRENT LOCATION TO DECOdE THE OPCODE
+            AND.L   #$0000FFFF,D2 ; ENSURE THAT ONLY SEND 4 HEX DIGITS AT A TIME
+            CMP.W   #$0000FFFF,D2   ; IF $FFFF IS PRESENT IN .S68 FILE MEANS IT IS END OF FILE OR INVALID IF ON ITS OWN
+            BEQ     INVALID_OPCODE ; INVALID SINCE $FFFF
+            BNE     VALID_OPCODE ; NOT $FFFF, SO POTENTIALLY VALID ->SEND FOR PROCESSING
+                      
+
+VALID_OPCODE:  
+            BRA SENDTOOPCODES
+SENDTOOPCODES:            
+           ; JSR CHECKOPCODE ; GO TO DECODE THE 4 HEX VALUES GIVEN TO IT      
+           BRA FINISHOUTPUTLINE ; IF VALID, SKIP INVALID MESSAGE
+
+INVALID_OPCODE:
+            ; PRINT ERROR MESSAGE AND MOVE TO NEXT LINE
+            MOVE.B      #'E',(A6)+   ; ERROR MESSAGE  
+            MOVE.B      #'r',(A6)+   ; ERROR MESSAGE  
+            MOVE.B      #'r',(A6)+   ; ERROR MESSAGE 
+            MOVE.B      #'o',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'r',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #':',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'I',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'n',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'v',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'a',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'l',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'i',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'d',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'o',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'p',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'c',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'o',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'d',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'e',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #',',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'p',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'r',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'i',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'n',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'t',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'i',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'n',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'g',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'o',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'u',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'t',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'d',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'a',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'t',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'a',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #':',(A6)+   ; ERROR MESSAGE
+            
+            MOVE.B      #CR,(A6)+    ; ERROR MESSAGE
+            MOVE.B      #LF,(A6)+    ; ERROR MESSAGE
+            MOVE.B      #'D',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'A',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'T',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'A',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #TAB,(A6)+   ; ERROR MESSAGE
+            MOVE.B      #DOLLAR,(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
+            CLR.L       D2      ; ENSURE THAT D2 USED IS CLEAN     
             
 FINISHOUTPUTLINE:
             MOVE.B      #0, (A6)  ; EVERY LINE WILL NEED TO HAVE A NULL TERMINATOR TO BE PRINTED
@@ -147,10 +218,10 @@ PREPFORNEWLINE:
             MOVE.L      #0,A3  
             JMP         CLRSCRN 
 
-CLRSCRN MOVE.W   #$FF00,D1
-        MOVE.B    #11,D0 
-        TRAP    #15
-        JMP     STARTNEWLINE               
+CLRSCRN     MOVE.W      #$FF00,D1 ; CLEAN SCREEN TO DISPLAY NEXT PAGE OF DECODED OP-CODES WITH THEIR ADDRESSES 
+            MOVE.B      #11,D0 
+            TRAP        #15
+            JMP         STARTNEWLINE               
 
 *--------END OF PRINTING CONTENT OF DECODED LINE------*
 
@@ -196,7 +267,7 @@ RESETVALUES CLR.L       D0                  ; CLEAR ALL VALUES
 
 WELCOME     DC.B        'Welcome to the Hexspeak disassembler.',CR,LF,0
 STARTADDR   DC.B        'Enter a starting address in hexadecimal: ',0
-ENDADDR     DC.B        'Enter an ending address in hexadecimal: ',0
+ENDADDR     DC.B        'Enter an ending address in hexadecimal:  ',0
 AGAINPROMPT DC.B        'Would you like to search again? (Y/N) ',0
 NEXTLINEPROMPT DC.B        'Would you like to print the next page? (Y/N) ',0
 USERRESPONSE    DC.B    '',0
