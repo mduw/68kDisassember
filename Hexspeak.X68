@@ -166,11 +166,18 @@ INVALID_OPCODE:
             MOVE.B      #'A',(A6)+   ; ERROR MESSAGE
             MOVE.B      #TAB,(A6)+   ; ERROR MESSAGE
             MOVE.B      #DOLLAR,(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
-            CLR.L       D2      ; ENSURE THAT D2 USED IS CLEAN     
+            
+            ; ADDRESS DISPLAYED MUST BE 8 DIGIT HEX VALUE PER SPECS
+            
+ADDRFORERROR:
+            MOVE.L  D2,D3   ; COPY CURRENT ADDRESS INTO D3 FOR CONVERSION
+            JSR L_HEXTOASCII    ; FIRST CONVERT ADDRESS STORED IN HEX INTO ASCII -> A2 HAS RESULT
+            
+ADDRFORERRORLOOP:                        
+            MOVE.B      (A2)+, (A6)+    ; CARRY OVER ONE CHAR AT A TIME FROM A2 TO A6
+            BNE.S       ADDRFORERRORLOOP ; TEST FOR END OF STRING, CONTINUE IF NOT   
+            SUBQ        #$1, A6          ; REMOVE THE NULL TERMINATOR FROM CARRIEVED OVER ADDRESS
+            CLR.L       D2      ; ENSURE THAT D2 USED IS CLEAN             
             
 FINISHOUTPUTLINE:
             MOVE.B      #0, (A6)  ; EVERY LINE WILL NEED TO HAVE A NULL TERMINATOR TO BE PRINTED
