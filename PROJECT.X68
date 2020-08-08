@@ -14,6 +14,13 @@ TAB         EQU         $09
 OUTPUTLINE_LOCATION  EQU     $5000 
 
 
+*/////////////////////////////////////////////////////////////////
+*
+*                        MAIN METHOD
+*
+*
+*////////////////////////////////////////////////////////////////
+
 START       ORG         $1000
 
 * ================= WELCOME SCREEN PROMPT ================= * 
@@ -277,42 +284,35 @@ RESETVALUES CLR.L       D0                  ; CLEAR ALL VALUES
             MOVE.L      #0,A3   
             JMP         WELC                ; GO BACK TO THE START     
             
-* ================== INCLUDE MODULES ================== *
-         ;   INCLUDE     'IO_func.X68'
+
 
 * ======================== END ======================== *
 HEX2BIN_RSLT  EQU     $2000
 
-*    ORG    $1000 			; uncomment for debugging
-*START:      				; uncomment for debugging
 
-*=========  START OF TEST FOR HEX2BIN (TO BE REMOVED) =========*   
-            ; convert every 2 hex bits. Each bit in hex = 4 bits in binary         
-*            MOVE.L  #$1100,A3
-*            MOVE.W  #$13B2,(A3)
-*            LEA     HEX2BIN_RSLT,A2     ; addr where output is located
-            
-*            MOVE.B  (A3)+,D2            ; convert every 2 hex bits.           
-*            JSR     HEX2BIN             ; convert to binary
-*            MOVE.B  (A3)+,D2
-*            JSR     HEX2BIN
-*            BRA     DONE                ; finish
-*=========  END OF TEST FOR HEX2BIN =========*   
 
-*=========  START OF SUBROUTINE FOR HEX2BIN  =========*   
+
+
+*/////////////////////////////////////////////////////////////////
+*
+*                        HEX TO BINARY
+*
+*
+*////////////////////////////////////////////////////////////////
+
+  
 * Note for implementation:
 *   1. Input:  move data to D2
 *   2. Output: located at given addr.
 *
 *
-*   EXTRA DOCUMENTATION:
+*   HOW TO USE FROM OTHER SUBROUTINES:
 *               MOVE.L      #$1100,A3       ; ADDRESS WHERE CONVERSION TAKES PLACE
 *               MOVE.L      D2,(A3)         ; MOVE REGISTER VALUE INTO A3 ADDRESS
 *               MOVEA.L     #$2000,A2       ; WHERE CONVERSION WILL SAVE TO
 *               JSR         HEX2BIN         ; CONVERTS TWO VALUES OF HEX INTO EIGHT BINARY BITS
 *               MOVE.L      $2000,D2        ; MOVES CONVERTED VALUE INTO D2
 *
-*           Make sure you include similar logic prior to entering into HEX2BIN
 
 HEX2BIN:    MOVE.B  D2,-(SP)        
             CLR     D1                  ; reset counter D1 to 0. every 1 hex digit ~ 4 digits in binary   
@@ -375,7 +375,16 @@ doswap      SWAP    D3
 
 
 
-* ================== START OF SUBROUTINE TO CONVERT ASCII TO HEX ================== *
+
+
+*/////////////////////////////////////////////////////////////////
+*
+*                        ASCII TO HEX
+*
+*
+*////////////////////////////////////////////////////////////////
+
+
 * NOTE FOR IMPLEMENTATION: 
 *       1. Input's location is held by A2. 
 *       2. Output's location is held by D3.
@@ -437,7 +446,16 @@ DISP        LEA         (A3),A1 ; OUTPUT STRING IN HEX
 
 
 
-* ================== START OF SUBROUTINE TO CONVERT LONG HEX TO ASCII ================== * 
+
+
+*/////////////////////////////////////////////////////////////////
+*
+*                        LONG HEX TO ASCII
+*
+*
+*////////////////////////////////////////////////////////////////
+
+
 * INPUT: D3 REGISTER MUST HAVE THE HEX VALUE
 * OUTPUT: A2 REGISTER    
 * REGISTERS USED: D4 FOR COUNTER
@@ -485,7 +503,17 @@ NEXT_L_H2A
 * ================== END OF SUBROUTINE TO CONVERT LONG HEX TO ASCII ================== * 
 
 
-* ================== START OF SUBROUTINE TO CONVERT WORD HEX TO ASCII ================== * 
+
+
+
+*/////////////////////////////////////////////////////////////////
+*
+*                        WORD HEX TO ASCII
+*
+*
+*////////////////////////////////////////////////////////////////
+
+ 
 * INPUT: D3 REGISTER MUST HAVE THE HEX VALUE
 * OUTPUT: A2 REGISTER    
 * REGISTERS USED: D4 FOR COUNTER
@@ -532,7 +560,18 @@ NEXT_W_H2A  MOVE.B      D2, (A2)+       ; STORE EACH BIT TO A1 IN RIGHT ORDER
                                 
 * ================== END OF SUBROUTINE TO CONVERT WORD HEX TO ASCII ================== * 
 
-; STARTING POINT IN THIS FILE
+
+
+
+
+
+*/////////////////////////////////////////////////////////////////
+*
+*                        DECODE OPCODES
+*
+*
+*////////////////////////////////////////////////////////////////
+
 ; ASSUMPTION: THE OPCODE IS STORED IN D2 AND CONTAINS THE ENTIRE THING
 ; (ALL 4 HEX VALUES, so for example D2 would be 0x00004E71 (NOP))
 ; FOR FUTURE DEVELOPMENTS, WHENEVER DECODING AN OPCODE, ALWAYS HAVE THE
@@ -561,8 +600,7 @@ CHECKOPCODE
             CMP.L       #$0000000E,D2   ; OPCODE IS GROUP 8
             BEQ         GROUP8OPCODE
 
-            ; OTHERWISE, IT IS BAD OPCODE AND SHOULD BE DISCARDED
-            ; THIS WILL NEED TO BE DONE CAREFULLY     
+            ; OTHERWISE, IT IS BAD OPCODE AND SHOULD BE DISCARDED    
             JMP         BAD_OPCODE
             
 
@@ -597,7 +635,111 @@ EASTUFF
             ; RTS NOT NECESSARY, DO NOT NEED TO RETURN TO DECIPHERING OPCODE
 
 
-; SUBROUTINE FOR DEALING WITH GOOD INPUT (PRINT SUCCESSFUL)
+EAGROUP1
+
+
+
+
+EAGROUP2
+
+
+
+SETSIZE
+            CMP.L       #$00000000,D2
+            BEQ         SETSIZEBYTE
+            CMP.L       #$00000001,D2
+            BEQ         SETSIZEWORD
+            CMP.L       #$00000010,D2
+            BEQ         SETSIZELONG
+            
+            RTS
+
+SETSIZEBYTE
+
+SETSIZEWORD
+
+SETSIZELONG
+
+
+
+
+
+ANDEST
+            CMP.L       #$00000000,D2   ; A0
+            BEQ         ANDEST0
+            CMP.L       #$00000001,D2   ; A1
+            BEQ         ANDEST1
+            CMP.L       $00000010,D2   ; A2
+            BEQ         ANDEST2
+            CMP.L       $00000011,D2   ; A3
+            BEQ         ANDEST3
+            CMP.L       $00000100,D2   ; A4
+            BEQ         ANDEST4
+            CMP.L       $00000101,D2   ; A5
+            BEQ         ANDEST5
+            CMP.L       $00000110,D2   ; A6
+            BEQ         ANDEST6
+            CMP.L       $00000111,D2   ; A7
+            BEQ         ANDEST7
+            
+            RTS
+
+ANDEST0
+
+ANDEST1
+
+ANDEST2
+
+ANDEST3
+
+ANDEST4
+
+ANDEST5
+
+ANDEST6
+
+ANDEST7
+
+
+DNDEST
+            CMP.L       #$00000000,D2   ; D0
+            BEQ         DNDEST0
+            CMP.L       #$00000001,D2   ; D1
+            BEQ         DNDEST1
+            CMP.L       $00000010,D2    ; D2
+            BEQ         DNDEST2
+            CMP.L       $00000011,D2    ; D3
+            BEQ         DNDEST3
+            CMP.L       $00000100,D2    ; D4
+            BEQ         DNDEST4
+            CMP.L       $00000101,D2    ; D5
+            BEQ         DNDEST5
+            CMP.L       $00000110,D2    ; D6
+            BEQ         DNDEST6
+            CMP.L       $00000111,D2    ; D7
+            BEQ         DNDEST7
+            
+            RTS
+            
+DNDEST0
+
+DNDEST1
+
+DNDEST2
+
+DNDEST3
+
+DNDEST4
+
+DNDEST5
+
+DNDEST6
+
+DNDEST7
+
+
+
+; SUBROUTINE FOR PRINTING OUT AN OPERATION THAT HAS ALL PARTS SUCCESSFULLY DECODED
 GOOD_OPCODE
             ; CLEARCACHEGOOD IS A LOOP THAT CLEANS OUT THE CACHE AND BACK TO $01000000
 CLEARCACHEGOOD
@@ -611,7 +753,7 @@ CLEANREGISTERS
             ; STACK IS NOW CLEAN, WIPE ANY OTHER REGISTERS THAT NEED TO BE CLEANED
             ; AFTER DONE, SHOULD JMP BACK TO ADDRESSLOOP TO CONTINUE DECIPHERING NEXT INSTRUCTION
             ; JMP       ADDRESSLOOP
-            BRA         FINISHOUTPUTLINE  ; JULIA ADDED THIS 
+            BRA         FINISHOUTPUTLINE  ; JULIA ADDED THIS
 
 
 
@@ -659,7 +801,7 @@ GROUP1OPCODE
 ; THESE OPCODES INCLUDE: MOVEM, NOT, LEA, JSR, RTS, NOP
 ;
 GROUP2OPCODE
-            MOVEM.L     (SP)+,D2        ; MOVES THE ENTIRE OPCODE BACK INTO D5 FOR FURTHER ANALYSIS
+            MOVEM.L     (SP)+,D2        ; MOVES THE ENTIRE OPCODE BACK INTO D2 FOR FURTHER ANALYSIS
             MOVEM.L     D2,-(SP)        ; SAVES ENTIRE UNDECIPHERED OPCODE BACK INTO STACK
             CMP.L       #$00004E75,D2   ; RTS 
             BEQ         RTSCODE
@@ -683,11 +825,8 @@ GROUP2OPCODE
 
 ; RTSCODE            
 RTSCODE
-            ; PRINT OUT RTS
-            MOVE.B      #'R',(A6)+   ; ERROR MESSAGE  
-            MOVE.B      #'T',(A6)+   ; ERROR MESSAGE  
-            MOVE.B      #'S',(A6)+   ; ERROR MESSAGE 
-            JMP         GOOD_OPCODE     ; PRINT SUCCESSFUL, CLEAR STACK AND REGISTERS
+            ; SAVE OPWORD
+            JMP         PRINT_RTS
 
 
 
@@ -698,29 +837,31 @@ NOPCODE
             MOVE.B      #'O',(A6)+   ; ERROR MESSAGE  
             MOVE.B      #'P',(A6)+   ; ERROR MESSAGE 
             JMP         GOOD_OPCODE     ; PRINT SUCCESSFUL, CLEAR STACK AND REGISTERS
+            
+            
+            
 ; NOTCODE
 ; INSTRUCTION FORMAT: 46XX
 NOTCODE
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVEM.L     D2,-(SP)        ; SAVES FULL UNDECIPHERED INSTRUCTION INTO STACK
-            AND.L       #$00000011,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
             
             ; CONVERT REMAINING TWO BITS INTO BINARY
             JSR         CONVERT2BINARY
             
             MOVEM.L     D2,-(SP)        ; SAVES 2 LSBs BINARY BITS TO STACK
             
-            ; FLAG CHECKING
-            
             AND.L       #$11000000,D2   ; CHECK SIZE FOR DESTINATION MODE
-            CMP.L       #$00000000,D2   ; SIZE BYTE
-            ; BEQ        BYTEFLAG
-            CMP.L       #$01000000,D2   ; SIZE WORD
-            ; BEQ        WORDFLAG       
-            CMP.L       #$10000000,D2   ; SIZE LONG
-            ; BEQ        LONGFLAG
-            CMP.L       #$11000000,D2
+            
+            LSR.L       #8,D2           ; SHIFT THE TWO BITS MSBs TO THE LSB
+            LSR.L       #8,D2
+            LSR.L       #8,D2
+            
+            CMP.L       #$00000011,D2
             BEQ         BAD_OPCODE      ; CANNOT BE 11, BAD OPCODE
+            JSR         SETSIZE         ; SET SIZE OF OPERATION
+            
                         
             MOVEM.L     (SP)+,D2        ; POPS 2 LSBs BINARY BITS BACK INTO D2
             JMP         EASTUFF         ; FIGURE OUT SOURCE MODE AND SOURCE REGISTER
@@ -732,29 +873,17 @@ NOTCODE
 ; INSTRUCTION FORMAT: 4XXX
 LEACODE
             ; DETERMINES An VALUE
-            AND.L       #$00001110,D2   ; DETERMINE An REGISTER
-            CMP.L      #$00000000,D2   ; A0
-            ;BEQ         A0FLAG
-            CMP.L      #$00000010,D2   ; A1
-            ;BEQ         A1FLAG
-            CMP.L      #$00000100,D2   ; A2
-            ;BEQ         A2FLAG
-            CMP.L      #$00000110,D2   ; A3
-            ;BEQ         A3FLAG
-            CMP.L      #$00001000,D2   ; A4
-            ;BEQ         A4FLAG
-            CMP.L      #$00001010,D2   ; A5
-            ;BEQ         A5FLAG
-            CMP.L      #$00001100,D2   ; A6
-            ;BEQ         A6FLAG
-            CMP.L      #$00001110,D2   ; A7
-            ;BEQ         A7FLAG
+            AND.L       #$00001110,D2   ; DETERMINE An DESTINATION REGISTER
+            LSR.L       #4,D2           ; SHIFT EACH HEX VALUE ONE TO THE RIGHT
+            
+            JSR         ANDEST          ; DETERMINES WHAT THE DESTINATION REGISTER IS (An)
+            
 
             
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVEM.L     D2,-(SP)        ; SAVES FULL UNDECIPHERED INSTRUCTION INTO STACK
             
-            AND.L       #$00000011,D2   ; MASKS EVERYTHING EXCEPT LAST 2 LSBs
+            AND.L       #$000000FF,D2   ; MASKS EVERYTHING EXCEPT LAST 2 LSBs
             JSR         CONVERT2BINARY  ; CONVERTS LSBs IN D2 TO BINARY
             
             JMP         EASTUFF         ; FIGURE OUT SOURCE MODE AND SOURCE REGISTER
@@ -766,7 +895,7 @@ JSRCODE
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVEM.L     D2,-(SP)        ; SAVES FULL UNDECIPHERED INSTRUCTION INTO STACK
             
-            AND.L       #$00000011,D2   ; MASKS EVERYTHING EXCEPT LAST 2 LSBs
+            AND.L       #$000000FF,D2   ; MASKS EVERYTHING EXCEPT LAST 2 LSBs
             JSR         CONVERT2BINARY  ; CONVERTS LSBs IN D2 TO BINARY
             
             JMP         EASTUFF         ; FIGURE OUT SOURCE MODE AND SOURCE REGISTER
@@ -819,7 +948,7 @@ GROUP3OPCODE
             CMP.L       #$0000006E,D2
             ;BEQ         BGTCODE        ; BGT
             
-            ;JSR         BAD_OPCODE     ; OTHER CASES ==> BAD OPCODE
+            JMP         BAD_OPCODE      ; OTHER CASES ==> BAD OPCODE
             
 BRACODE
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
@@ -911,33 +1040,14 @@ GROUP4OPCODE
             
             JSR         CONVERT2BINARY  ; CONVERTS TWO MSBs INTO BINARY
             AND.L       #$00001110,D2   ; MASKS EVERYTHING EXCEPT 3 BITS TO DETERMINE REGISTER #
+            LSR.L       #4,D2           ; SHIFT ALL HEX VALUES ONE TO THE RIGHT
             
-            CMP.L       #$00000000,D2   ; D0
-            ;BEQ         D0FLAG
-            CMP.L       #$00000010,D2   ; D1
-            ;BEQ         D1FLAG
-            CMP.L       #$00000100,D2   ; D2
-            ;BEQ         D2FLAG
-            CMP.L       #$00000110,D2   ; D3
-            ;BEQ         D3FLAG
-            CMP.L       #$00001000,D2   ; D4
-            ;BEQ         D4FLAG
-            CMP.L       #$00001010,D2   ; D5
-            ;BEQ         D5FLAG
-            CMP.L       #$00001100,D2   ; D6
-            ;BEQ         D6FLAG
-            CMP.L       #$00001110,D2   ; D7
-            ;BEQ         D7FLAG
+            JSR         DNDEST
             
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVEM.L     D2,-(SP)        ; TEMPORARILY MOVES D2 INTO STACK
             
-            LSL.L       #8,D2           ; THIS CAN PROBABLY BE SIMPLIFIED
-            LSL.L       #8,D2
-            LSL.L       #8,D2
-            LSR.L       #8,D2
-            LSR.L       #8,D2
-            LSR.L       #8,D2           ; GET THE FIRST 2 HEX DIGITS
+            AND.L       #$000000FF,D2   ; GET LAST TWO HEX VALUES
             JSR         CONVERT2BINARY  ; CONVERT THEM TO BINARY
             
             JMP         EASTUFF
@@ -958,12 +1068,9 @@ GROUP5OPCODE
             MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED OPCODE BACK INTO D2
             MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED OPCODE BACK INTO STACK
             
-            LSL.L       #4,D2           ; THIS CAN PROBABLY BE SIMPLIFIED
-            LSL.L       #8,D2
-            LSL.L       #8,D2
-            LSR.L       #8,D2
-            LSR.L       #8,D2
-            LSR.L       #8,D2           ; GET THE MIDDLE 2 HEX DIGITS
+            AND.L       #$00000FF0,D2   ; GET THE MIDDLE 2 HEX DIGITS
+            LSR.L       #4,D2           ; SHIFT ALL VALUES ONE TO THE RIGHT
+            
             
             JSR         CONVERT2BINARY  ; CONVERT THEM INTO BINARY
             MOVEM.L     D2,-(SP)        ; SAVE BINARY BITS INTO STACK TEMPORARILY
@@ -1034,21 +1141,67 @@ GROUP6OPCODE
             MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED OPCODE BACK INTO D2
             MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED OPCODE BACK INTO STACK
             
-            LSL.L       #4,D2           ; THIS CAN PROBABLY BE SIMPLIFIED
-            LSL.L       #8,D2
-            LSL.L       #8,D2
-            LSR.L       #8,D2
-            LSR.L       #8,D2
-            LSR.L       #8,D2           ; GET THE MIDDLE 2 HEX DIGITS
+            AND.L       #$00000FF0,D2   ; GET THE MIDDLE 2 HEX DIGITS
+            LSR.L       #4,D2           ; SHIFT ALL HEX VALUES ONE TO THE RIGHT
 
             JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             
             MOVEM.L     D2,-(SP)        ; SAVE BINARY BITS TO THE STACK
             AND.L       #$00011100,D2   ; MASK EVERYTHING EXCEPT THE THREE BITS TO DETERMINE WHETHER IT'S AND OR MULS
             CMP.L       #$00011100,D2   ; MULS
-            ;BEQ         MULSCODE
+            BEQ         MULSCODE
             CMP.L       #$00001100,D2   ; AND
-            ;BNE         ANDCODE        ; NOT EQUAL TO BAD CODE
+            BNE         ANDCODE        ; NOT EQUAL TO BAD CODE
+            
+            JMP         BAD_OPCODE      ; OTHERWISE A BAD OPCODE
+
+
+MULSCODE
+            MOVEM.L     (SP)+,D2        ; MOVE BINARY BITS BACK INTO D2
+            AND.L       #$11100000,D2   ; MASK THREE MSBs TO FIGURE OUT REGISTER
+
+            LSR.L       #8,D2           ; SHIFT THREE MSBs TO LSB
+            LSR.L       #8,D2
+            LSR.L       #4,D2
+            
+            JSR         DNDEST    
+            
+            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
+            
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
+            
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            JMP         EASTUFF
+            
+            
+ANDCODE
+            MOVEM.L     (SP)+,D2        ; MOVE BINARY BITS BACK INTO D2
+            AND.L       #$00011100,D2   ; MASK EVERYTHING EXCEPT THREE BITS TO CHECK FOR OPMODE
+            CMP.L       #$00000000,D2      ; EA + Dn BYTE
+            ;BEQ        EADNBYTEFLAG
+            CMP.L       #$00000100,D2      ; EA + Dn WORD
+            ;BEQ        EADNWORDFLAG
+            CMP.L       #$00001000,D2      ; EA + Dn LONG
+            ;BEQ        EADNLONGFLAG
+            CMP.L       #$00010000,D2      ; Dn + EA BYTE
+            ;BEQ        DNEABYTEFLAG
+            CMP.L       #$00010100,D2      ; Dn + EA WORD
+            ;BEQ        DNEAWORDFLAG
+            CMP.L       #$00011000,D2      ; Dn + EA LONG
+            ;BEQ        DNEALONGFLAG
+            
+            ; #$00001100 DOES NOT NEED TO BE CHECKED AS IT WAS CHECKED IN GROUP6OPCODE
+            
+            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
+            
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
+            
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            JMP         EASTUFF
             
 
 
@@ -1059,6 +1212,40 @@ GROUP6OPCODE
 ; THESE OPCODES INCLUDE: ADD
 ;
 GROUP7OPCODE
+            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
+            
+            AND.L       #$00000FF0,D2   ; MASK EVERYTHING EXCEPT TWO HEX VALUES TO DETERMINE REGISTER AND OPMODE
+            LSR.L       #4,D2           ; SHIFTS THESE TWO BITS ONE SPACE TO THE RIGHT
+            AND.L       #$000000FF,D2   ; MASKS EVERYTHING EXCEPT TWO LSBs
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            MOVEM.L     (SP)+,D2        ; MOVE BINARY BITS BACK INTO D2
+            AND.L       #$00011100,D2      ; MASK EVERYTHING EXCEPT THREE BITS TO CHECK FOR OPMODE
+            CMP.L       #$00000000,D2      ; EA + Dn BYTE
+            ;BEQ        EADNBYTEFLAG
+            CMP.L       #$00000100,D2      ; EA + Dn WORD
+            ;BEQ        EADNWORDFLAG
+            CMP.L       #$00001000,D2      ; EA + Dn LONG
+            ;BEQ        EADNLONGFLAG
+            CMP.L       #$00010000,D2      ; Dn + EA BYTE
+            ;BEQ        DNEABYTEFLAG
+            CMP.L       #$00010100,D2      ; Dn + EA WORD
+            ;BEQ        DNEAWORDFLAG
+            CMP.L       #$00011000,D2      ; Dn + EA LONG
+            ;BEQ        DNEALONGFLAG
+            CMP.L       #$00011100,D2      ; BAD OPCODE
+            BEQ         BAD_OPCODE
+            
+            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
+            
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT THE TWO LSBs
+            
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            JMP         EASTUFF
+
 
             
      
@@ -1531,12 +1718,302 @@ REG_ASL         MOVE.L      (SP)+,D2        ; POP D2 FROM THE STACK
                 
                 RTS                         
 
+
+
+
+*/////////////////////////////////////////////////////////////////
+*
+*                        OPCODE NAMES
+*
+*
+*////////////////////////////////////////////////////////////////
+                
+                
+                *-----HOW TO USE: --------------------------*
+                * CALL:   "JMP PRINT_RTS" INSIDE RTSCODE----*
+*========= START OF OPCODE LABELS =========*
+PRINT_NOP
+            MOVE.B      #'N',(A6)+     
+            MOVE.B      #'O',(A6)+     
+            MOVE.B      #'P',(A6)+  
+            JMP         GOOD_OPCODE 
+            
+PRINT_MOVE
+            MOVE.B      #'M',(A6)+     
+            MOVE.B      #'O',(A6)+     
+            MOVE.B      #'V',(A6)+  
+            MOVE.B      #'E',(A6)+ 
+            JMP         GOOD_OPCODE 
+            
+PRINT_MOVEM
+            MOVE.B      #'M',(A6)+     
+            MOVE.B      #'O',(A6)+     
+            MOVE.B      #'V',(A6)+  
+            MOVE.B      #'E',(A6)+ 
+            MOVE.B      #'M',(A6)+ 
+            JMP         GOOD_OPCODE             
+
+PRINT_ADD
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'D',(A6)+  
+            JMP         GOOD_OPCODE 
+
+PRINT_SUB
+            MOVE.B      #'S',(A6)+     
+            MOVE.B      #'U',(A6)+     
+            MOVE.B      #'B',(A6)+  
+            JMP         GOOD_OPCODE 
+            
+PRINT_MULS
+            MOVE.B      #'M',(A6)+     
+            MOVE.B      #'U',(A6)+     
+            MOVE.B      #'L',(A6)+  
+            MOVE.B      #'S',(A6)+  
+            JMP         GOOD_OPCODE     
+    
+PRINT_DIVU
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'I',(A6)+     
+            MOVE.B      #'V',(A6)+  
+            MOVE.B      #'U',(A6)+  
+            JMP         GOOD_OPCODE         
+
+PRINT_LEA
+            MOVE.B      #'L',(A6)+     
+            MOVE.B      #'E',(A6)+     
+            MOVE.B      #'A',(A6)+  
+            JMP         GOOD_OPCODE   
+            
+PRINT_AND
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'N',(A6)+     
+            MOVE.B      #'D',(A6)+  
+            JMP         GOOD_OPCODE   
+
+PRINT_NOT
+            MOVE.B      #'N',(A6)+     
+            MOVE.B      #'O',(A6)+     
+            MOVE.B      #'T',(A6)+  
+            JMP         GOOD_OPCODE   
+
+PRINT_ASL
+            MOVE.B      #'L',(A6)+     
+            MOVE.B      #'S',(A6)+     
+            MOVE.B      #'L',(A6)+  
+            JMP         GOOD_OPCODE   
+
+PRINT_LSL
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'S',(A6)+     
+            MOVE.B      #'L',(A6)+  
+            JMP         GOOD_OPCODE   
+
+PRINT_BGT
+            MOVE.B      #'B',(A6)+     
+            MOVE.B      #'G',(A6)+     
+            MOVE.B      #'T',(A6)+  
+            JMP         GOOD_OPCODE 
+            
+PRINT_BLE
+            MOVE.B      #'B',(A6)+     
+            MOVE.B      #'L',(A6)+     
+            MOVE.B      #'E',(A6)+  
+            JMP         GOOD_OPCODE             
+
+PRINT_BEQ
+            MOVE.B      #'B',(A6)+     
+            MOVE.B      #'E',(A6)+     
+            MOVE.B      #'Q',(A6)+  
+            JMP         GOOD_OPCODE   
+            
+PRINT_JSR
+            MOVE.B      #'J',(A6)+     
+            MOVE.B      #'S',(A6)+     
+            MOVE.B      #'R',(A6)+  
+            JMP         GOOD_OPCODE            
+
+PRINT_RTS
+            MOVE.B      #'R',(A6)+     
+            MOVE.B      #'T',(A6)+     
+            MOVE.B      #'S',(A6)+ 
+            JMP         GOOD_OPCODE  
+            
+PRINT_BRA
+            MOVE.B      #'B',(A6)+     
+            MOVE.B      #'R',(A6)+     
+            MOVE.B      #'A',(A6)+ 
+            JMP         GOOD_OPCODE  
+            
+*========= END OF OPCODE NAMES=========*
+
+*========= START OF SIZE=========*
+
+PRINT_DOT_B
+            MOVE.B      #'.',(A6)+     
+            MOVE.B      #'B',(A6)+     
+            RTS 
+
+PRINT_DOT_W
+            MOVE.B      #'.',(A6)+     
+            MOVE.B      #'W',(A6)+     
+            RTS 
+            
+PRINT_DOT_L
+            MOVE.B      #'.',(A6)+     
+            MOVE.B      #'L',(A6)+     
+            RTS
+            
+
+*========= END OF SIZE =========*
+
+*========= START OF REGISTERS =========*
+PRINT_D0
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'0',(A6)+     
+            RTS
+            
+PRINT_D1
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'1',(A6)+     
+            RTS            
+PRINT_D2
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'2',(A6)+     
+            RTS
+            
+PRINT_D3
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'3',(A6)+     
+            RTS  
+PRINT_D4
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'4',(A6)+     
+            RTS
+            
+PRINT_D5
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'5',(A6)+     
+            RTS            
+PRINT_D6
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'6',(A6)+     
+            RTS
+            
+PRINT_D7
+            MOVE.B      #'D',(A6)+     
+            MOVE.B      #'7',(A6)+     
+            RTS             
+PRINT_A0
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'0',(A6)+     
+            RTS
+            
+PRINT_A1
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'1',(A6)+     
+            RTS            
+PRINT_A2
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'2',(A6)+     
+            RTS
+            
+PRINT_A3
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'3',(A6)+     
+            RTS  
+PRINT_A4
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'4',(A6)+     
+            RTS
+            
+PRINT_A5
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'5',(A6)+     
+            RTS            
+PRINT_A6
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'6',(A6)+     
+            RTS
+            
+PRINT_A7
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'7',(A6)+     
+            RTS  
+
+*========= END OF REGISTERS =========*
+
+*========= START OF SPECIAL CHARACTERS =========*
+PRINT_OPENPAR
+            MOVE.B      #'(',(A6)+     
+            RTS  
+            
+PRINT_CLOSEPAR
+            MOVE.B      #')',(A6)+     
+            RTS  
+
+PRINT_HASH
+            MOVE.B      #'#',(A6)+     
+            RTS  
+           
+
+*========= END OF SPECIAL CHARACTERS =========*
+
+
+
+
+
+
+
+
+
+* ================= OPCODE WORDS ================= *
+MOVEWORD    DC.B    'MOVE',0
+MOVEMWORD   DC.B    'MOVEM',0
+NOTWORD     DC.B    'NOT',0
+LEAWORD     DC.B    'LEA',0
+JSRWORD     DC.B    'JSR',0
+RTSWORD     DC.B    'RTS',0
+NOPWORD     DC.B    'NOP',0
+BRAWORD     DC.B    'BRA',0
+BEQWORD     DC.B    'BEQ',0
+BLTWORD     DC.B    'BLT',0
+BGTWORD     DC.B    'BGT',0
+DIVUWORD    DC.B    'DIVU',0
+SUBWORD     DC.B    'SUB',0
+ANDWORD     DC.B    'AND',0
+MULSWORD    DC.B    'MULS',0
+ADDWORD     DC.B    'ADD',0
+LSLWORD     DC.B    'LSL',0
+LSRWORD     DC.B    'LSR',0
+ASLWORD     DC.B    'ASL',0
+ASRWORD     DC.B    'ASR',0
+
+* ================= SYMBOLS ================= *
+LONGSIZE    DC.B    '.L',0
+WORDSIZE    DC.B    '.W',0
+BYTESIZE    DC.B    '.B',0
+
+IMMEDIATE   DC.B    '#',0
+HEX         DC.B    '$',0
+BINARY      DC.B    '%',0
+
+* ================= OPERATION VARIABLES ================= *
+OPWORD      EQU     $6000
+OPSIZE      EQU     $6100
+OPSOURCE    EQU     $6200
+OPDEST      EQU     $6300
+
+
+
 * ================= CONSTANTS GO HERE ================= *
 SIZEDESTBWL DC.B    '',0    ; THIS FLAG HOLDS 0 OR 1 OR 2, WHERE 0 IS BYTE, 1 IS WORD, 2 IS LONG 
 EAREGISTER  DC.B    '',0    ; THIS FLAG HOLDS 0-6, WHERE 0 REPRESENTS REG#, 1 IS PROGRAM COUNTER W/ DISPLACEMENT,
                             ; 2 IS PROGRAM COUNTER WITH INDEX, 3 IS PROGRAM COUNTER WITH INDEX, 4 IS ABSOLUTE SHORT,
                             ; 5 IS ABSOLUTE LONG, 6 IS IMMEDIATE
 EAMODE  DC.B        '',0    ; THIS FLAG HOLDS 0-7, WHERE 0 REPRESENTS FINISH THIS I'M TOO TIRED
+
+
 * ======================== END ======================== *
 * ================== CONSTANTS GO HERE ================== *
 
@@ -1570,6 +2047,7 @@ LINES_ON_SCREEN DS.L    1
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 *~Font name~Courier New~
