@@ -111,8 +111,16 @@ ISOPCODEVALID:
 VALID_OPCODE:  
             BRA SENDTOOPCODES
 SENDTOOPCODES:            
-           ; JSR CHECKOPCODE ; GO TO DECODE THE 4 HEX VALUES GIVEN TO IT      
-           BRA FINISHOUTPUTLINE ; IF VALID, SKIP INVALID MESSAGE
+            CLR      D0
+            CLR      D1
+            CLR      D3                
+            MOVE.L   #$00000000, A2
+            
+            ; D2 IS FILLED WITH DATA TO DECODE   
+            
+            ; JMP      CHECKOPCODE ; GO TO DECODE THE 4 HEX VALUES GIVEN TO IT      
+           
+           BRA      FINISHOUTPUTLINE ; IF VALID, SKIP INVALID MESSAGE
 
 INVALID_OPCODE:
             ; PRINT ERROR MESSAGE AND MOVE TO NEXT LINE
