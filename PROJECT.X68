@@ -1,7 +1,7 @@
 *------------------------------------------------------------------------
 * Title      :  Hexspeak Disassembler
-* Written by :  Taylor Eyler, Mitchell Dang, Julia Brosseau, Andrew Goupinets 
-* Date       :  July 19 - August 6, 2020
+* Written by :  Mitchell Dang, Julia Brosseau, Andrew Goupinets 
+* Date       :  July 19 - August 10, 2020
 * Description:  This is the reverse assembler for the Motorola MC68000
 *               Microprocessor created as a group project for CSS 422:
 *               Hardware and Computer Organization at University of 
@@ -44,9 +44,6 @@ STORESTARTADD
             MOVE.L      D3, D5          ; STORES START ADDRESS IN HEX INTO D5
             CLR         D3              ; CLEAR D3 AFTER USING IT
             MOVE.L      D5, A4          ; SAVE START ADDRESS IN A4 REGISTER 
-            ;LEA         START_ADDRESS, A2   ; START_ADDRESS WILL TO BE ASSOCIATED WITH A2
-            ;JSR         L_HEXTOASCII    ; CONVERTS HEX IN D3 TO ASCII INTO A2           
-            ;LEA         START_ADDRESS, A2   ; SAVES START ADDRESS IN ASCII FORMAT
        
 EADDR       LEA         ENDADDR,A1      ; LOAD END PROMPT
             MOVE.B      #14,D0          ; USING TRAP TASK #14
@@ -62,10 +59,6 @@ STOREENDADD
             JSR         ASCII2HEX	    ; Convert starting address to hex. Stored at D3
             MOVE.L      D3, D6          ; STORES END ADDRESS IN HEX INTO D6
             CLR         D3              ; CLEAR D3 AFTER USING IT
-            MOVE.L      D6, A5           ; STORE END ADDRESS INTO THE A5 REGISTER 
-            ;LEA         END_ADDRESS, A2   ; START_ADDRESS WILL TO BE ASSOCIATED WITH A2
-            ;JSR         L_HEXTOASCII    ; CONVERTS HEX IN D3 TO ASCII INTO A2 AND L_HEX2ASCII_RESULT                  
-            ;LEA         END_ADDRESS, A2   ; SAVES END ADDRESS IN ASCII 
             
             ; TODO: PRINT (ADDRESS INCREMENTED), OPCODE AND REGISTERS
 *--- EXPECTED TO PRINT "(ADDRESS)(TAB)(DECODED OPCODE)(TAB)(EAS IF APPLICABLE)(NEW LINE)(#0)----*
@@ -85,13 +78,7 @@ LIMITLINESONSCREEN
                   
 FILLOUTPUTLINE:
             ADD.B   #1, LINES_ON_SCREEN ; COUNT THE LINE THAT IS ABOUT TO BE PRINTED           
-            MOVE.B   #$FF, (A6) ; PUT FF IN CURRENT LOCATION OF A6 
-            
-CLEANOUTPUTBEFOREFILLING:
-           ; A6 WILL POINT TO THE END OF PREVIOUS OUTPUT ; replace previous line with F's
-            MOVE.L #$FFFFFFFF, -(A6)       ; CLEAR OUT THE CONTENTS OF OUTPUT LOCATION IN PREP FOR NEW LINE 
-            CMP.B #$FF, (OUTPUTLINE_LOCATION)
-            BNE CLEANOUTPUTBEFOREFILLING
+
             LEA     OUTPUTLINE_LOCATION, A6 ; ASSOCIATE OUTPUT_LOCATION AND A6
             
 ADDADDRINTOLINE:
@@ -196,16 +183,11 @@ ADDRFORERRORLOOP:
             MOVE.B      (A2)+, (A6)+    ; CARRY OVER ONE CHAR AT A TIME FROM A2 TO A6
             BNE.S       ADDRFORERRORLOOP ; TEST FOR END OF STRING, CONTINUE IF NOT   
             SUBQ        #$1, A6          ; REMOVE THE NULL TERMINATOR FROM CARRIEVED OVER ADDRESS
-                        
-           ; MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
-           ; MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
-           ; MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
-           ; MOVE.B      #'F',(A6)+   ; ERROR MESSAGE
+
             CLR.L       D2      ; ENSURE THAT D2 USED IS CLEAN                   
             
 FINISHOUTPUTLINE:
             MOVE.B      #0, (A6)  ; EVERY LINE WILL NEED TO HAVE A NULL TERMINATOR TO BE PRINTED
-            LEA     OUTPUTLINE_LOCATION, A6 ; SAVE OUTPUT_LOCATION 
             BRA     PRINTOUTPUTLINE
 
 
@@ -214,6 +196,13 @@ PRINTOUTPUTLINE:
             MOVE.L  #13,D0  ; PRINT CONTENT OF LINE
             TRAP    #15 
             
+            MOVE.B   #$FF, (A6) ; PUT FF IN CURRENT LOCATION OF A6 
+            
+CLEANOUTPUTAFTERFILLING:
+           ; A6 WILL POINT TO THE END OF PREVIOUS OUTPUT ; replace previous line with F's
+            MOVE.L #$FFFFFFFF, -(A6)       ; CLEAR OUT THE CONTENTS OF OUTPUT LOCATION IN PREP FOR NEW LINE 
+            CMP.B #$FF, (OUTPUTLINE_LOCATION)
+            BNE CLEANOUTPUTAFTERFILLING
             ; LOOP TO READ NEXT LINE (SOME OP CODES ARE OK TO INCREMENT D5 AS WELL IF MORE THAN STANDARD 2 IS NEEDED)
             
 NEXTLINE    ADD.L    #$2,D5      ; INCREMENT THE ADDRESS BY 2 (SOME OP CODES WILL ALSO INCREMENT THE ADDRESS BY MORE)    
@@ -244,6 +233,7 @@ PREPFORNEWLINE:
             CLR.L       D0                  ; CLEAR ALL VALUES
             CLR.L       D1                  ; NOTE: IN THE FUTURE ANY ADDITIONAL REGISTERS
             CLR.L       D2                  ; USED CAN BE CLEARED HERE TOO
+            CLR.L       D3                  ; USED FOR CONVERTING TO HEX
             MOVE.L      #0,A1
             MOVE.L      #0,A2
             MOVE.L      #0,A3  
@@ -284,12 +274,19 @@ DONE        MOVE.B      #9,D0           ; USING TRAP TASK #9
 RESETVALUES CLR.L       D0                  ; CLEAR ALL VALUES
             CLR.L       D1                  ; NOTE: IN THE FUTURE ANY ADDITIONAL REGISTERS
             CLR.L       D2                  ; USED CAN BE CLEARED HERE TOO
+            CLR.L       D3                  ; USED FOR CONVERTING TO HEX
+            CLR.L       D4
+            CLR.L       D5                  ; USED CAN BE CLEARED HERE TOO
+            CLR.L       D6  
+            CLR.L       D7
             MOVE.L      #0,A1
             MOVE.L      #0,A2
             MOVE.L      #0,A3   
+            MOVE.L      #0,A4
+            MOVE.L      #0,A5
+            MOVE.L      #0,A6
             JMP         WELC                ; GO BACK TO THE START     
             
-
 
 * ======================== END ======================== *
 HEX2BIN_RSLT  EQU     $2000
