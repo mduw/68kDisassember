@@ -183,20 +183,29 @@ ADDRFORERRORLOOP:
             MOVE.B      (A2)+, (A6)+    ; CARRY OVER ONE CHAR AT A TIME FROM A2 TO A6
             BNE.S       ADDRFORERRORLOOP ; TEST FOR END OF STRING, CONTINUE IF NOT   
             SUBQ        #$1, A6          ; REMOVE THE NULL TERMINATOR FROM CARRIEVED OVER ADDRESS
-
             CLR.L       D2      ; ENSURE THAT D2 USED IS CLEAN                   
             
 FINISHOUTPUTLINE:
             MOVE.B      #0, (A6)  ; EVERY LINE WILL NEED TO HAVE A NULL TERMINATOR TO BE PRINTED
 
-            BRA     PRINTOUTPUTLINE
+            BRA         PRINTOUTPUTLINE
 
 
 PRINTOUTPUTLINE:
-            LEA     OUTPUTLINE_LOCATION, A1 ;USED TO PRINT RESULT OF 
-            MOVE.L  #13,D0  ; PRINT CONTENT OF LINE
-            TRAP    #15 
+            LEA         OUTPUTLINE_LOCATION, A1 ;USED TO PRINT RESULT OF 
+            MOVE.L      #13,D0  ; PRINT CONTENT OF LINE
+            TRAP        #15 
             
+            MOVE.B      #$FF, (A6) ; PUT FF IN CURRENT LOCATION OF A6 
+            
+CLEANOUTPUTAFTERFILLING:
+           ; A6 WILL POINT TO THE END OF PREVIOUS OUTPUT ; replace previous line with F's
+            CMP.L       #$5000,A6
+            BEQ         NEXTLINE
+            MOVE.B      #$FF,-(A6)
+            BRA         CLEANOUTPUTAFTERFILLING
+            
+            ; LOOP TO READ NEXT LINE (SOME OP CODES ARE OK TO INCREMENT D5 AS WELL IF MORE THAN STANDARD 2 IS NEEDED)
             
 NEXTLINE    ADD.L    #$2,D5      ; INCREMENT THE ADDRESS BY 2 (SOME OP CODES WILL ALSO INCREMENT THE ADDRESS BY MORE)    
             MOVE.L      D5, A4   ; UPDATE A4 (CURRENT LOCATION) AS WELL 
@@ -848,30 +857,32 @@ PRINTBADINSTR
 ; THESE OPCODES INCLUDE: MOVE
 ;
 GROUP1OPCODE
-
             JSR         PRINT_MOVE      ; 
             MOVEM.L     (SP)+,D2        ; MOVES THE ENTIRE OPCODE BACK INTO D2 FOR FURTHER ANALYSIS
             MOVEM.L     D2,-(SP)        ; SAVES ENTIRE UNDECIPHERED OPCODE BACK INTO STACK 
-
+            
             ; FOLLOWING LINE CHECK FOR SIZE OF MOVE 
             LSR.L       #8,D2           ; 1234 ==> 0012
             LSR.L       #4,D2           ; 0012 ==> 0001; GET THE MSB
             JSR         CONVERT2BINARY
             AND.L       #$000000FF,D2   ; CHECK THE  LAST 2 BINARY BIT 
-            CMP.L       #$00000000,D2
+            CMP.L       #$00000001,D2
             BEQ         GROUP1_DOTB
             CMP.L       #$00000011,D2
             BEQ         GROUP1_DOTW
             CMP.L       #$00000010,D2
             BEQ         GROUP1_DOTL
-
+            
 GROUP1_DOTB JSR         PRINT_DOT_B
+            JSR         PRINT_SPACE
             BRA         GROUP1_SRC_EA
-
+            
 GROUP1_DOTW JSR         PRINT_DOT_W
+            JSR         PRINT_SPACE
             BRA         GROUP1_SRC_EA   
-
+   
 GROUP1_DOTL JSR         PRINT_DOT_L
+            JSR         PRINT_SPACE
             BRA         GROUP1_SRC_EA            
             ; FOLLOWING LINE DECODE SOURCE EA
 GROUP1_SRC_EA
@@ -891,14 +902,20 @@ GROUP1_SRC_EA
             BEQ         SRC_An_PLUS
             CMP.L       #$00000100,D2
             BEQ         SRC_MINUS_An
-
+            
 SRC_Dn      JSR         PRINT_D  
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
             JSR         GET_GROUP1_SRC_REG            
             JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    D0,
             BRA         GROUP1_DEST_EA   ; GO TO DESTINATION DECODING
-
+            
 SRC_An      JSR         PRINT_OPENPAR
             JSR         PRINT_A
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
             JSR         GET_GROUP1_SRC_REG
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    (A0),
@@ -906,6 +923,9 @@ SRC_An      JSR         PRINT_OPENPAR
 SRC_An_PLUS
             JSR         PRINT_OPENPAR
             JSR         PRINT_A
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
             JSR         GET_GROUP1_SRC_REG
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_PLUS
@@ -915,11 +935,14 @@ SRC_MINUS_An
             JSR         PRINT_MINUS
             JSR         PRINT_OPENPAR
             JSR         PRINT_A
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
             JSR         GET_GROUP1_SRC_REG
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L   -(An),
             BRA         GROUP1_DEST_EA      ; GO TO DESTINATION DECODING
-
+                           
 GROUP1_DEST_EA
             CLR         D2
             MOVE.L      (SP)+,D2
@@ -937,12 +960,18 @@ GROUP1_DEST_EA
             BEQ         DEST_An_PLUS
             CMP.L       #$00000100,D2
             BEQ         DEST_MINUS_An
-
+            
 DEST_Dn     JSR         PRINT_D
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
             JSR         GET_GROUP1_DEST_REG
             BRA         FINISH_GROUP1
 DEST_An     JSR         PRINT_OPENPAR
             JSR         PRINT_A
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
             JSR         GET_GROUP1_DEST_REG
             JSR         PRINT_CLOSEPAR
             BRA         FINISH_GROUP1
@@ -950,6 +979,9 @@ DEST_An     JSR         PRINT_OPENPAR
 DEST_An_PLUS
             JSR         PRINT_OPENPAR
             JSR         PRINT_A
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
             JSR         GET_GROUP1_DEST_REG
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_PLUS
@@ -959,16 +991,16 @@ DEST_MINUS_An
             JSR         PRINT_MINUS
             JSR         PRINT_OPENPAR
             JSR         PRINT_A
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
             JSR         GET_GROUP1_DEST_REG
             JSR         PRINT_CLOSEPAR
             BRA         FINISH_GROUP1  
 FINISH_GROUP1
-            RTS
-
+            BRA         PRINTA6
+             
 GET_GROUP1_SRC_REG
-            CLR         D2
-            MOVE.L      (SP)+,D2
-            MOVE.L      D2,-(SP)
             AND.L       #$0000000F,D2   ; RESERVE THE LAST HEX BIT
             JSR         CONVERT2BINARY  ; BIT 0-3
             AND.L       #$00000FFF,D2   ; CLEAR BIT 3
@@ -989,12 +1021,8 @@ GET_GROUP1_SRC_REG
             CMP.L       #$00000111,D2
             BEQ         PRINT_7 
             RTS
-
+            
 GET_GROUP1_DEST_REG
-            CLR         D2
-            MOVE.L      (SP)+,D2
-            MOVE.L      D2,-(SP)
-
             AND.L       #$00000F00,D2   ; RESERVE 2nd HEX BIT
             LSR.L       #8,D2           ; ELIMINATE THE LAST 2 BITS
             JSR         CONVERT2BINARY
@@ -1019,7 +1047,6 @@ GET_GROUP1_DEST_REG
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; GROUP 2 OPCODES
 ;
 ; THESE OPCODES INCLUDE: MOVEM, NOT, LEA, JSR, RTS, NOP
@@ -1222,60 +1249,72 @@ GROUP3OPCODE
             MOVE.L      D2,-(SP)        ; TEMPORARILY MOVES D2 INTO STACK
             LSR.L       #8,D2           ; GET THE FIRST 2 HEX DIGITS. EX: 0x00006E71 BECOMES 0x0000006E
             CMP.L       #$00000060,D2   ; BRA
-            ;BEQ         BRACODE
+            BEQ         BRACODE
             CMP.L       #$00000067,D2   ; BEQ
-            ;BEQ         BEQCODE  
+            BEQ         BEQCODE  
             CMP.L       #$0000006D,D2   
-            ;BEQ         BLTCODE        ; BLT
+            BEQ         BLTCODE        ; BLT
             CMP.L       #$0000006E,D2
-            ;BEQ         BGTCODE        ; BGT
+            BEQ         BGTCODE        ; BGT
             
             JMP         BAD_OPCODE      ; OTHER CASES ==> BAD OPCODE
             
 BRACODE
+            JSR         PRINT_BRA
+            JSR         PRINT_SPACE
+            JSR         PRINT_DOLLAR
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVE.L      D2,-(SP)        ; TEMPORARILY MOVES D2 INTO STACK
             AND.L       #$000000FF,D2      ; BITMASK TO GET THE LAST 2 DIGITS. EX:  $6034 ==> $0034 
             CMP.L       #$00000000,D2   ; CHECK IF THE LAST 2 IS ZERO
-            ;BEQ         READ_4MOREBITS      ; HEX ADDR HAS 2 TYPE: 4 DIGITS (60xx) OR 8 DIGITS (6000 xxxx)
+            BEQ         READ_4MOREBITS      ; HEX ADDR HAS 2 TYPE: 4 DIGITS (60xx) OR 8 DIGITS (6000 xxxx)
             JSR         DSPLMCONVERSION ; FOR 4 DIGITS TYPE ==> THE LAST 2 DIGITS = DISPLACEMENT. 
-            ;BEQ         OUTPUT         ; BRA   NEW_ADDR_BRANCHING_TO (STORED AT D3)
-
+            BRA         GROUP3_FINISH
+            
             
 BEQCODE
+            JSR         PRINT_BEQ
+            JSR         PRINT_SPACE
+            JSR         PRINT_DOLLAR
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVE.L      D2,-(SP)        ; TEMPORARILY MOVES D2 INTO STACK
             AND.L       #$000000FF,D2      ; BITMASK TO GET THE LAST 2 DIGITS. EX:  $6034 ==> $0034 
             CMP.L       #$00000000,D2   ; CHECK IF THE LAST 2 IS ZERO
-            ;BEQ         READ_4MOREBITS      ; HEX ADDR HAS 2 TYPE: 4 DIGITS (60xx) OR 8 DIGITS (6000 xxxx)
+            BEQ         READ_4MOREBITS      ; HEX ADDR HAS 2 TYPE: 4 DIGITS (60xx) OR 8 DIGITS (6000 xxxx)
             JSR         DSPLMCONVERSION ; FOR 4 DIGITS TYPE ==> THE LAST 2 DIGITS = DISPLACEMENT. 
-            ;BEQ         OUTPUT         ; BEQ   NEW_ADDR_BRANCHING_TO (STORED AT D3)
+            BRA         GROUP3_FINISH
             
             
 BLTCODE
+            JSR         PRINT_BLT
+            JSR         PRINT_SPACE
+            JSR         PRINT_DOLLAR
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVE.L      D2,-(SP)        ; TEMPORARILY MOVES D2 INTO STACK
             AND.L       #$000000FF,D2      ; BITMASK TO GET THE LAST 2 DIGITS. EX:  $6034 ==> $0034 
             CMP.L       #$00000000,D2   ; CHECK IF THE LAST 2 IS ZERO
-            ;BEQ         READ_4MOREBITS      ; HEX ADDR HAS 2 TYPE: 4 DIGITS (60xx) OR 8 DIGITS (6000 xxxx)
+            BEQ         READ_4MOREBITS      ; HEX ADDR HAS 2 TYPE: 4 DIGITS (60xx) OR 8 DIGITS (6000 xxxx)
             JSR         DSPLMCONVERSION ; FOR 4 DIGITS TYPE ==> THE LAST 2 DIGITS = DISPLACEMENT. 
-            ;BEQ         OUTPUT         ; BLT   NEW_ADDR_BRANCHING_TO (STORED AT D3)
+            BRA         GROUP3_FINISH
       
 BGTCODE
+            JSR         PRINT_BGT
+            JSR         PRINT_SPACE
+            JSR         PRINT_DOLLAR
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVE.L      D2,-(SP)        ; TEMPORARILY MOVES D2 INTO STACK
             AND.L       #$000000FF,D2      ; BITMASK TO GET THE LAST 2 DIGITS. EX:  $6034 ==> $0034 
             CMP.L       #$00000000,D2   ; CHECK IF THE LAST 2 IS ZERO
-            ;BEQ         READ_4MOREBITS      ; HEX ADDR HAS 2 TYPE: 4 DIGITS (60xx) OR 8 DIGITS (6000 xxxx)
-            JSR         DSPLMCONVERSION ; FOR 4 DIGITS TYPE ==> THE LAST 2 DIGITS = DISPLACEMENT. 
-            ;BEQ         OUTPUT         ; BGT   NEW_ADDR_BRANCHING_TO (STORED AT D3)     
+            BEQ         READ_4MOREBITS      ; HEX ADDR HAS 2 TYPE: 4 DIGITS (60xx) OR 8 DIGITS (6000 xxxx)
+            BNE         DSPLMCONVERSION ; FOR 4 DIGITS TYPE ==> THE LAST 2 DIGITS = DISPLACEMENT. 
+            BRA         GROUP3_FINISH     
             
-
+GROUP3_FINISH
+            BRA         PRINTA6           
             
             
 ; REVERSE THE TWO COMPLEMENT: INVERT BITS <== ADD 1    
 DSPLMCONVERSION 
-            MOVE.L      #$EE,D2         ; DISPLACEMENT
             SUB.L       #%00000001,D2   ; SUBTRACT 1 FROM DISPLACEMENT
             NOT.L       D2              ; FLIP BITS
             SUB.L       #2,D2    
@@ -1286,6 +1325,15 @@ RFLZ        JSR         REFILL_ZERO     ; PUSH ZERO TO REPLACE FFFF REMOVED. DIS
             CLR         D3
             MOVE.L      D5,D3           ; MOVE CURRENT ADDR
             SUB.L       D2,D3           ; NEW ADDR BRANCHING TO
+            
+            
+            JSR         L_HEXTOASCII    ; CONVERT ADDR TO STRING
+            JSR         ADDRFLOOP            
+            RTS
+ADDRFLOOP   
+            MOVE.B      (A2)+,(A6)+
+            BNE.S       ADDRFLOOP
+            SUBQ        #$1,A6
             RTS
     
 CLEARF
@@ -1308,9 +1356,23 @@ REFILL_ZERO
             BNE         REFILL_ZERO
             RTS 
 
+READ_4MOREBITS
+            MOVE.L      D5,-(SP)
+            ADD.L       #$2,D5
+            MOVE.L      D5,A4
+            CLR         D3
+            MOVE.W      (A4)+,D3
+            ADD.L       (SP)+,D3
+            JSR         L_HEXTOASCII    ; CONVERT ADDR TO STRING
+            JSR         ADDRFLOOP   
+            CLR         D3
+            BRA         GROUP3_FINISH    
+                     
+
+            
+            
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; GROUP 4 OPCODES
 ;
 ; THESE OPCODES INCLUDE: DIVU
@@ -2025,7 +2087,7 @@ PRINT_MOVE
             MOVE.B      #'O',(A6)+     
             MOVE.B      #'V',(A6)+  
             MOVE.B      #'E',(A6)+ 
-            JMP         GOOD_OPCODE 
+            RTS
             
 PRINT_MOVEM
             MOVE.B      #'M',(A6)+     
@@ -2071,43 +2133,58 @@ PRINT_AND
             MOVE.B      #'A',(A6)+     
             MOVE.B      #'N',(A6)+     
             MOVE.B      #'D',(A6)+  
-            JMP         GOOD_OPCODE   
+            RTS   
 
 PRINT_NOT
             MOVE.B      #'N',(A6)+     
             MOVE.B      #'O',(A6)+     
             MOVE.B      #'T',(A6)+  
-            JMP         GOOD_OPCODE   
+            RTS   
 
 PRINT_ASL
-            MOVE.B      #'L',(A6)+     
-            MOVE.B      #'S',(A6)+     
-            MOVE.B      #'L',(A6)+  
-            JMP         GOOD_OPCODE   
-
-PRINT_LSL
             MOVE.B      #'A',(A6)+     
             MOVE.B      #'S',(A6)+     
             MOVE.B      #'L',(A6)+  
-            JMP         GOOD_OPCODE   
+            RTS 
+PRINT_ASR
+            MOVE.B      #'A',(A6)+     
+            MOVE.B      #'S',(A6)+     
+            MOVE.B      #'R',(A6)+  
+            RTS   
+
+PRINT_LSL
+            MOVE.B      #'L',(A6)+     
+            MOVE.B      #'S',(A6)+     
+            MOVE.B      #'L',(A6)+  
+            RTS 
+PRINT_LSR
+            MOVE.B      #'L',(A6)+     
+            MOVE.B      #'S',(A6)+     
+            MOVE.B      #'R',(A6)+  
+            RTS  
 
 PRINT_BGT
             MOVE.B      #'B',(A6)+     
             MOVE.B      #'G',(A6)+     
             MOVE.B      #'T',(A6)+  
-            JMP         GOOD_OPCODE 
+            RTS
+            
+PRINT_BLT   MOVE.B      #'B',(A6)+
+            MOVE.B      #'L',(A6)+
+            MOVE.B      #'T',(A6)+
+            RTS
             
 PRINT_BLE
             MOVE.B      #'B',(A6)+     
             MOVE.B      #'L',(A6)+     
             MOVE.B      #'E',(A6)+  
-            JMP         GOOD_OPCODE             
+            RTS             
 
 PRINT_BEQ
             MOVE.B      #'B',(A6)+     
             MOVE.B      #'E',(A6)+     
             MOVE.B      #'Q',(A6)+  
-            JMP         GOOD_OPCODE   
+            RTS  
             
 PRINT_JSR
             MOVE.B      #'J',(A6)+     
@@ -2125,7 +2202,7 @@ PRINT_BRA
             MOVE.B      #'B',(A6)+     
             MOVE.B      #'R',(A6)+     
             MOVE.B      #'A',(A6)+ 
-            JMP         GOOD_OPCODE  
+            RTS
             
 *========= END OF OPCODE NAMES=========*
 
@@ -2208,10 +2285,13 @@ PRINT_PLUS MOVE.B      #'+',(A6)+
             
 PRINT_MINUS MOVE.B      #'-',(A6)+
             RTS
+            
+PRINT_DOLLAR MOVE.B      #'$',(A6)+
+            RTS
+
            
 
 *========= END OF SPECIAL CHARACTERS =========*
-
 
 
 * ================= OPCODE WORDS ================= *
@@ -2293,6 +2373,9 @@ LINES_ON_SCREEN DS.L    1
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
+
+
 
 
 
