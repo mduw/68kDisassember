@@ -295,7 +295,6 @@ HEX2BIN_RSLT  EQU     $2000
 
 
 
-
 */////////////////////////////////////////////////////////////////
 *
 *                        HEX TO BINARY
@@ -638,14 +637,105 @@ EASTUFF
             ; RTS NOT NECESSARY, DO NOT NEED TO RETURN TO DECIPHERING OPCODE
 
 
+EASTUFF2
+            MOVEM.L     D2,-(SP)        ; SAVES BINARY BITS TO STACK FOR EAGROUP1/2
+            AND.L       #$00111000,D2   ; CHECK SIZE EA MODE
+
+            CMP.L       #$00100000,D2   ; CHECK 00XXX000 WHERE XXX IS FROM 000 TO 100
+            BLE         EAGROUP1        ; EA MODE IS PART OF GROUP 1
+
+            CMP.L       #$00101000,D2   ; BAD EA
+            BEQ         BAD_OPCODE
+            
+            CMP.L       #$00110000,D2   ; BAD EA
+            BEQ         BAD_OPCODE
+            
+            CMP.L       #$00111000,D2   ; CHECK 00XXX000 WHERE XXX IS 111
+            BEQ         EAGROUP2        ; EA MODE IS PART OF GROUP 2
+            
+            
+            
+            
+            RTS
+
+
+
 EAGROUP1
+            ; DETERMINE WHICH EA MODE IT IS
+            CMP.L       #$00000000,D2   ; DIRECT REGISTER Dn
+            BEQ         DIRECTREGISTER
+            
+            CMP.L       #$00001000,D2   ; ADDRESS REGISTER DIRECT An
+            BEQ         ADDRESSREGDIRECT
+            
+            CMP.L       #$00010000,D2   ; ADDRESS REGISTER INDIRECT (An)
+            BEQ         ADDRESSREGINDIRECT
+            
+            CMP.L       #$00011000,D2   ; ADDRESS REGISTER W/POST
+            ;BEQ         ADDRESSREGPOST
+            
+            CMP.L       #$00100000,D2   ; ADDRESS REGISTER W/PRE
+            ;BEQ         ADDRESSREGPRE
+            
+            CMP.L       #$00101000,D2   ; BAD EA
+            BGE         BAD_OPCODE
+
+            RTS
+
+DIRECTREGISTER
+            MOVEM.L     (SP)+,D2        ; LOAD BINARY BITS BACK INTO D2
+            AND.L       #$00000111,D2   ; MASK EVERYTHING EXCEPT LAST THREE BITS FOR REGISTER
+            
+            MOVE.B      #'D',(A6)+
+            JSR         DETERMINEREG    ; DETERMINE WHICH REGISTER IT IS
+            
+            RTS
+            
+ADDRESSREGDIRECT
+            MOVEM.L     (SP)+,D2        ; LOAD BINARY BITS BACK INTO D2
+            AND.L       #$00000111,D2   ; MASK EVERYTHING EXCEPT LAST THREE BITS FOR REGISTER
+            
+            MOVE.B      #'A',(A6)+
+            JSR         DETERMINEREG    ;DETERMINE WHICH REGISTER IT IS
+            
+            RTS
+            
+ADDRESSREGINDIRECT
+            MOVEM.L     (SP)+,D2        ; LOAD BINARY BITS BACK INTO D2
+            AND.L       #$00000111,D2   ; MASK EVERYTHING EXCEPT LAST THREE BITS FOR REGISTER
+            
+            MOVE.B      #'(',(A6)+
+            MOVE.B      #'A',(A6)+
+            
+            JSR         DETERMINEREG    ;DETERMINE WHICH REGISTER IT IS
+            MOVE.B      #')',(A6)+
+            
+            RTS           
+
+
 
 
 
 
 EAGROUP2
-
-
+            MOVEM.L     (SP)+,D2        ; LOAD BINARY BITS BACK INTO D2
+            AND.L       #$00000111,D2   ; MASK EVERYTHING EXCEPT LAST THREE BITS
+            
+            ; DETERMINE WHICH EA MODE IT IS
+            CMP.L       #$00000000,D2   ; ABSOLUTE WORD
+            ;BEQ         ABSOLUTEWORD
+            
+            CMP.L       #$00000001,D2   ; ABSOLUTE LONG
+            ;BEQ         ABSOLUTELONG
+            
+            CMP.L       #$00000100,D2   ; IMMEDIATE
+            ;BEQ         IMMEDIATE
+            
+            ; TEST FOR BAD INPUTS
+            
+            RTS
+            
+            
 
 SETSIZE
             CMP.L       #$00000000,D2
@@ -658,88 +748,60 @@ SETSIZE
             RTS
 
 SETSIZEBYTE
-
+            MOVE.L      #'.B ',(A6)+ 
+            RTS
 SETSIZEWORD
-
+            MOVE.L      #'.W ',(A6)+
+            RTS
 SETSIZELONG
-
-
-
-
-
-ANDEST
-            CMP.L       #$00000000,D2   ; A0
-            BEQ         ANDEST0
-            CMP.L       #$00000001,D2   ; A1
-            BEQ         ANDEST1
-            CMP.L       $00000010,D2   ; A2
-            BEQ         ANDEST2
-            CMP.L       $00000011,D2   ; A3
-            BEQ         ANDEST3
-            CMP.L       $00000100,D2   ; A4
-            BEQ         ANDEST4
-            CMP.L       $00000101,D2   ; A5
-            BEQ         ANDEST5
-            CMP.L       $00000110,D2   ; A6
-            BEQ         ANDEST6
-            CMP.L       $00000111,D2   ; A7
-            BEQ         ANDEST7
-            
+            MOVE.L      #'.L ',(A6)+ 
             RTS
 
-ANDEST0
 
-ANDEST1
-
-ANDEST2
-
-ANDEST3
-
-ANDEST4
-
-ANDEST5
-
-ANDEST6
-
-ANDEST7
-
-
-DNDEST
-            CMP.L       #$00000000,D2   ; D0
-            BEQ         DNDEST0
-            CMP.L       #$00000001,D2   ; D1
-            BEQ         DNDEST1
-            CMP.L       $00000010,D2    ; D2
-            BEQ         DNDEST2
-            CMP.L       $00000011,D2    ; D3
-            BEQ         DNDEST3
-            CMP.L       $00000100,D2    ; D4
-            BEQ         DNDEST4
-            CMP.L       $00000101,D2    ; D5
-            BEQ         DNDEST5
-            CMP.L       $00000110,D2    ; D6
-            BEQ         DNDEST6
-            CMP.L       $00000111,D2    ; D7
-            BEQ         DNDEST7
+DETERMINEREG
+            CMP.L       #$00000000,D2   ; 0
+            BEQ         REG0
+            CMP.L       #$00000001,D2   ; 1
+            BEQ         REG1
+            CMP.L       #$00000010,D2    ; 2
+            BEQ         REG2
+            CMP.L       #$00000011,D2    ; 3
+            BEQ         REG3
+            CMP.L       #$00000100,D2    ; 4
+            BEQ         REG4
+            CMP.L       #$00000101,D2    ; 5
+            BEQ         REG5
+            CMP.L       #$00000110,D2    ; 6
+            BEQ         REG6
+            CMP.L       #$00000111,D2    ; 7
+            BEQ         REG7
             
             RTS
             
-DNDEST0
-
-DNDEST1
-
-DNDEST2
-
-DNDEST3
-
-DNDEST4
-
-DNDEST5
-
-DNDEST6
-
-DNDEST7
-
+REG0
+            MOVE.B      #'0',(A6)+
+            RTS 
+REG1
+            MOVE.B      #'1',(A6)+ 
+            RTS
+REG2
+            MOVE.B      #'2',(A6)+
+            RTS 
+REG3
+            MOVE.B      #'3',(A6)+
+            RTS
+REG4
+            MOVE.B      #'4',(A6)+
+            RTS 
+REG5
+            MOVE.B      #'5',(A6)+ 
+            RTS
+REG6
+            MOVE.B      #'6',(A6)+
+            RTS 
+REG7
+            MOVE.B      #'7',(A6)+ 
+            RTS
 
 
 ; SUBROUTINE FOR PRINTING OUT AN OPERATION THAT HAS ALL PARTS SUCCESSFULLY DECODED
@@ -795,6 +857,173 @@ PRINTBADINSTR
 ;
 GROUP1OPCODE
 
+            JSR         PRINT_MOVE      ; 
+            MOVEM.L     (SP)+,D2        ; MOVES THE ENTIRE OPCODE BACK INTO D2 FOR FURTHER ANALYSIS
+            MOVEM.L     D2,-(SP)        ; SAVES ENTIRE UNDECIPHERED OPCODE BACK INTO STACK 
+
+            ; FOLLOWING LINE CHECK FOR SIZE OF MOVE 
+            LSR.L       #8,D2           ; 1234 ==> 0012
+            LSR.L       #4,D2           ; 0012 ==> 0001; GET THE MSB
+            JSR         CONVERT2BINARY
+            AND.L       #$000000FF,D2   ; CHECK THE  LAST 2 BINARY BIT 
+            CMP.L       #$00000000,D2
+            BEQ         GROUP1_DOTB
+            CMP.L       #$00000011,D2
+            BEQ         GROUP1_DOTW
+            CMP.L       #$00000010,D2
+            BEQ         GROUP1_DOTL
+
+GROUP1_DOTB JSR         PRINT_DOT_B
+            BRA         GROUP1_SRC_EA
+
+GROUP1_DOTW JSR         PRINT_DOT_W
+            BRA         GROUP1_SRC_EA   
+
+GROUP1_DOTL JSR         PRINT_DOT_L
+            BRA         GROUP1_SRC_EA            
+            ; FOLLOWING LINE DECODE SOURCE EA
+GROUP1_SRC_EA
+            CLR         D2
+            MOVE.L      (SP)+,D2        ; POP D2 FROM STACK
+            MOVE.L      D2,-(SP)        ; PUSH D2  TO STACK BEFORE MODIFY IT
+            AND.L       #$000000FF,D2   ; GET THE LAST 2 HEX  BITS
+            JSR         CONVERT2BINARY  ; CONVERT TO 8 BITS BINARY
+            AND.L       #$00FFFFFF,D2   ; RESERVE BIT 0-5 FOR CHECKING
+            LSR.L       #8,D2           ; ELIMINATE BIT 0-1
+            LSR.L       #4,D2           ; ELIMATE BIT 2
+            CMP.L       #$00000000,D2   ;
+            BEQ         SRC_Dn
+            CMP.L       #$00000010,D2
+            BEQ         SRC_An
+            CMP.L       #$00000011,D2
+            BEQ         SRC_An_PLUS
+            CMP.L       #$00000100,D2
+            BEQ         SRC_MINUS_An
+
+SRC_Dn      JSR         PRINT_D  
+            JSR         GET_GROUP1_SRC_REG            
+            JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    D0,
+            BRA         GROUP1_DEST_EA   ; GO TO DESTINATION DECODING
+
+SRC_An      JSR         PRINT_OPENPAR
+            JSR         PRINT_A
+            JSR         GET_GROUP1_SRC_REG
+            JSR         PRINT_CLOSEPAR
+            JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    (A0),
+            BRA         GROUP1_DEST_EA       ; GO TO DESTINATION DECODING
+SRC_An_PLUS
+            JSR         PRINT_OPENPAR
+            JSR         PRINT_A
+            JSR         GET_GROUP1_SRC_REG
+            JSR         PRINT_CLOSEPAR
+            JSR         PRINT_PLUS
+            JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    (A0)+,
+            BRA         GROUP1_DEST_EA       ; GO TO DESTINATION DECODING
+SRC_MINUS_An
+            JSR         PRINT_MINUS
+            JSR         PRINT_OPENPAR
+            JSR         PRINT_A
+            JSR         GET_GROUP1_SRC_REG
+            JSR         PRINT_CLOSEPAR
+            JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L   -(An),
+            BRA         GROUP1_DEST_EA      ; GO TO DESTINATION DECODING
+
+GROUP1_DEST_EA
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
+            AND.L       #$00000FF0,D2   ; GET 2nd 3rd HEX BIT
+            LSR.L       #4,D2           ; REMOVE THE LSB
+            JSR         CONVERT2BINARY  ; GET BINARY BIT 4-11
+            AND.L       #$000FFF00,D2   ; RESERVE BIT 6-8
+            LSR.L       #8,D2           ; ELIMINATE BIT 4 5
+            CMP.L       #$00000000,D2
+            BEQ         DEST_Dn
+            CMP.L       #$00000010,D2
+            BEQ         DEST_An
+            CMP.L       #$00000011,D2
+            BEQ         DEST_An_PLUS
+            CMP.L       #$00000100,D2
+            BEQ         DEST_MINUS_An
+
+DEST_Dn     JSR         PRINT_D
+            JSR         GET_GROUP1_DEST_REG
+            BRA         FINISH_GROUP1
+DEST_An     JSR         PRINT_OPENPAR
+            JSR         PRINT_A
+            JSR         GET_GROUP1_DEST_REG
+            JSR         PRINT_CLOSEPAR
+            BRA         FINISH_GROUP1
+
+DEST_An_PLUS
+            JSR         PRINT_OPENPAR
+            JSR         PRINT_A
+            JSR         GET_GROUP1_DEST_REG
+            JSR         PRINT_CLOSEPAR
+            JSR         PRINT_PLUS
+            BRA         FINISH_GROUP1           
+
+DEST_MINUS_An
+            JSR         PRINT_MINUS
+            JSR         PRINT_OPENPAR
+            JSR         PRINT_A
+            JSR         GET_GROUP1_DEST_REG
+            JSR         PRINT_CLOSEPAR
+            BRA         FINISH_GROUP1  
+FINISH_GROUP1
+            RTS
+
+GET_GROUP1_SRC_REG
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
+            AND.L       #$0000000F,D2   ; RESERVE THE LAST HEX BIT
+            JSR         CONVERT2BINARY  ; BIT 0-3
+            AND.L       #$00000FFF,D2   ; CLEAR BIT 3
+            CMP.L       #$00000000,D2
+            BEQ         PRINT_0         ; EX MOVE.L D2 by this step
+            CMP.L       #$00000001,D2
+            BEQ         PRINT_1
+            CMP.L       #$00000010,D2
+            BEQ         PRINT_2
+            CMP.L       #$00000011,D2
+            BEQ         PRINT_3
+            CMP.L       #$00000100,D2
+            BEQ         PRINT_4
+            CMP.L       #$00000101,D2
+            BEQ         PRINT_5
+            CMP.L       #$00000110,D2
+            BEQ         PRINT_6
+            CMP.L       #$00000111,D2
+            BEQ         PRINT_7 
+            RTS
+
+GET_GROUP1_DEST_REG
+            CLR         D2
+            MOVE.L      (SP)+,D2
+            MOVE.L      D2,-(SP)
+
+            AND.L       #$00000F00,D2   ; RESERVE 2nd HEX BIT
+            LSR.L       #8,D2           ; ELIMINATE THE LAST 2 BITS
+            JSR         CONVERT2BINARY
+            LSR.L       #4,D2           ;  ELIMINATE BIT 8
+            CMP.L       #$00000000,D2
+            BEQ         PRINT_0         ; EX MOVE.L D2,D0 by this step
+            CMP.L       #$00000001,D2
+            BEQ         PRINT_1
+            CMP.L       #$00000010,D2
+            BEQ         PRINT_2
+            CMP.L       #$00000011,D2
+            BEQ         PRINT_3
+            CMP.L       #$00000100,D2
+            BEQ         PRINT_4
+            CMP.L       #$00000101,D2
+            BEQ         PRINT_5
+            CMP.L       #$00000110,D2
+            BEQ         PRINT_6
+            CMP.L       #$00000111,D2
+            BEQ         PRINT_7
+            RTS
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -875,21 +1104,79 @@ NOTCODE
 ; LEACODE
 ; INSTRUCTION FORMAT: 4XXX
 LEACODE
-            ; DETERMINES An VALUE
-            AND.L       #$00001110,D2   ; DETERMINE An DESTINATION REGISTER
-            LSR.L       #4,D2           ; SHIFT EACH HEX VALUE ONE TO THE RIGHT
+            ;STEP 1: LOAD OPWORD
+            MOVE.B      #'L',(A6)+ 
+            MOVE.B      #'E',(A6)+ 
+            MOVE.B      #'A',(A6)+
+            MOVE.B      #TAB,(A6)+
             
-            JSR         ANDEST          ; DETERMINES WHAT THE DESTINATION REGISTER IS (An)
-            
-
-            
+            ;STEP 2: DETERMINE EA MODE
+            ;STEP 3: DETERMINE EA REGISTER
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVEM.L     D2,-(SP)        ; SAVES FULL UNDECIPHERED INSTRUCTION INTO STACK
             
-            AND.L       #$000000FF,D2   ; MASKS EVERYTHING EXCEPT LAST 2 LSBs
-            JSR         CONVERT2BINARY  ; CONVERTS LSBs IN D2 TO BINARY
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT LAST 2 BITS
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            MOVEM.L     D2,-(SP)        ; SAVE BINARY BITS TO STACK
             
-            JMP         EASTUFF         ; FIGURE OUT SOURCE MODE AND SOURCE REGISTER
+            
+            ; LEA CANNOT BE Dn, An, (An)+, -(An), #
+            ; Dn = XX00 0RRR
+            ; An = XX00 1RRR
+            ; (An)+ = XX01 1RRR
+            ; -(An) = XX10 0RRR
+            ; # = XX11 1100
+            AND.L       #$00111000,D2
+            CMP.L       #$00001000,D2
+            BLE         BAD_OPCODE
+            CMP.L       #$00011000,D2
+            BEQ         BAD_OPCODE
+            CMP.L       #$00100000,D2
+            BEQ         BAD_OPCODE
+            CMP.L       #$00111100,D2
+            BEQ         BAD_OPCODE
+            MOVEM.L     (SP)+,D2        ; PUT BINARY BITS BACK INTO D2            
+              
+            
+            JSR         EASTUFF2        ; OTHERWISE GOOD
+            MOVE.B      #',',(A6)+
+            
+            ;STEP 4: DETERMINE SOURCE REGISTER
+            MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVES FULL UNDECIPHERED INSTRUCTION INTO STACK
+            AND.L       #$00000F00,D2   ; MASK EVERYTHING EXCEPT SECOND HEX
+            LSR.L       #8,D2           ; SHIFT HEX VALUE TO LSB
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            LSR.L       #4,D2           ; SHIFTS BITS ONE TO THE RIGHT
+            AND.L       #$00000111,D2   ; MASKS EVERYTHING EXCEPT 3 LSBs
+            
+            
+            MOVE.B      #'A',(A6)+
+            JSR         DETERMINEREG
+            
+            
+            ;STEP 5: PRINT IT OUT
+            JMP         GOOD_OPCODE
+
+
+
+
+
+            ; DETERMINES An VALUE
+            ;AND.L       #$00001110,D2   ; DETERMINE An DESTINATION REGISTER
+            ;LSR.L       #4,D2           ; SHIFT EACH HEX VALUE ONE TO THE RIGHT
+            
+            ;JSR         ANDEST          ; DETERMINES WHAT THE DESTINATION REGISTER IS (An)
+            
+
+            
+            ;MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
+            ;MOVEM.L     D2,-(SP)        ; SAVES FULL UNDECIPHERED INSTRUCTION INTO STACK
+            
+            ;AND.L       #$000000FF,D2   ; MASKS EVERYTHING EXCEPT LAST 2 LSBs
+            ;JSR         CONVERT2BINARY  ; CONVERTS LSBs IN D2 TO BINARY
+            
+            ;JMP         EASTUFF         ; FIGURE OUT SOURCE MODE AND SOURCE REGISTER
        
             
 ; JSRCODE
@@ -1045,7 +1332,7 @@ GROUP4OPCODE
             AND.L       #$00001110,D2   ; MASKS EVERYTHING EXCEPT 3 BITS TO DETERMINE REGISTER #
             LSR.L       #4,D2           ; SHIFT ALL HEX VALUES ONE TO THE RIGHT
             
-            JSR         DNDEST
+            ;JSR         DNDEST
             
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVEM.L     D2,-(SP)        ; TEMPORARILY MOVES D2 INTO STACK
@@ -1167,7 +1454,7 @@ MULSCODE
             LSR.L       #8,D2
             LSR.L       #4,D2
             
-            JSR         DNDEST    
+            ;JSR         DNDEST    
             
             MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
             MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
@@ -1871,79 +2158,39 @@ PRINT_DOT_L
 *========= END OF SIZE =========*
 
 *========= START OF REGISTERS =========*
-PRINT_D0
-            MOVE.B      #'D',(A6)+     
+PRINT_D     MOVE.B      #'D',(A6)+
+            RTS
+PRINT_0  
             MOVE.B      #'0',(A6)+     
             RTS
             
-PRINT_D1
-            MOVE.B      #'D',(A6)+     
+PRINT_1    
             MOVE.B      #'1',(A6)+     
             RTS            
-PRINT_D2
-            MOVE.B      #'D',(A6)+     
+PRINT_2   
             MOVE.B      #'2',(A6)+     
             RTS
             
-PRINT_D3
-            MOVE.B      #'D',(A6)+     
+PRINT_3    
             MOVE.B      #'3',(A6)+     
             RTS  
-PRINT_D4
-            MOVE.B      #'D',(A6)+     
+PRINT_4     
             MOVE.B      #'4',(A6)+     
             RTS
             
-PRINT_D5
-            MOVE.B      #'D',(A6)+     
+PRINT_5   
             MOVE.B      #'5',(A6)+     
             RTS            
-PRINT_D6
-            MOVE.B      #'D',(A6)+     
+PRINT_6     
             MOVE.B      #'6',(A6)+     
             RTS
             
-PRINT_D7
-            MOVE.B      #'D',(A6)+     
+PRINT_7    
             MOVE.B      #'7',(A6)+     
             RTS             
-PRINT_A0
-            MOVE.B      #'A',(A6)+     
-            MOVE.B      #'0',(A6)+     
-            RTS
             
-PRINT_A1
-            MOVE.B      #'A',(A6)+     
-            MOVE.B      #'1',(A6)+     
-            RTS            
-PRINT_A2
-            MOVE.B      #'A',(A6)+     
-            MOVE.B      #'2',(A6)+     
+PRINT_A     MOVE.B      #'A',(A6)+
             RTS
-            
-PRINT_A3
-            MOVE.B      #'A',(A6)+     
-            MOVE.B      #'3',(A6)+     
-            RTS  
-PRINT_A4
-            MOVE.B      #'A',(A6)+     
-            MOVE.B      #'4',(A6)+     
-            RTS
-            
-PRINT_A5
-            MOVE.B      #'A',(A6)+     
-            MOVE.B      #'5',(A6)+     
-            RTS            
-PRINT_A6
-            MOVE.B      #'A',(A6)+     
-            MOVE.B      #'6',(A6)+     
-            RTS
-            
-PRINT_A7
-            MOVE.B      #'A',(A6)+     
-            MOVE.B      #'7',(A6)+     
-            RTS  
-
 *========= END OF REGISTERS =========*
 
 *========= START OF SPECIAL CHARACTERS =========*
@@ -1958,15 +2205,20 @@ PRINT_CLOSEPAR
 PRINT_HASH
             MOVE.B      #'#',(A6)+     
             RTS  
+PRINT_COMM  MOVE.B      #',',(A6)+
+            RTS
+            
+PRINT_SPACE MOVE.B      #' ',(A6)+
+            RTS
+            
+PRINT_PLUS MOVE.B      #'+',(A6)+
+            RTS
+            
+PRINT_MINUS MOVE.B      #'-',(A6)+
+            RTS
            
 
 *========= END OF SPECIAL CHARACTERS =========*
-
-
-
-
-
-
 
 
 
@@ -2038,8 +2290,7 @@ LINES_ON_SCREEN DS.L    1
 * ======================== END ======================== *
 
 
-            END         START
-         
+            END         START         
 
 
 
@@ -2050,6 +2301,9 @@ LINES_ON_SCREEN DS.L    1
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
+
+
 
 
 
