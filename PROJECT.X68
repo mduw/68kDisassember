@@ -120,7 +120,7 @@ SENDTOOPCODES:
             JMP      CHECKOPCODE ; GO TO DECODE THE 4 HEX VALUES GIVEN TO IT      
            
            
-           BRA      FINISHOUTPUTLINE ; IF VALID, SKIP INVALID MESSAGE
+PRINTA6     BRA      FINISHOUTPUTLINE ; IF VALID, SKIP INVALID MESSAGE
 
 INVALID_OPCODE:
             ; PRINT ERROR MESSAGE AND MOVE TO NEXT LINE
@@ -234,7 +234,8 @@ PREPFORNEWLINE:
             CLR.L       D0                  ; CLEAR ALL VALUES
             CLR.L       D1                  ; NOTE: IN THE FUTURE ANY ADDITIONAL REGISTERS
             CLR.L       D2                  ; USED CAN BE CLEARED HERE TOO
-            CLR.L       D3                  ; USED FOR CONVERTING TO HEX
+            CLR.L       D3                 
+            CLR.L       D7                  ; USED FOR CONVERTING TO HEX
             MOVE.L      #0,A1
             MOVE.L      #0,A2
             MOVE.L      #0,A3  
@@ -460,51 +461,50 @@ DISP        LEA         (A3),A1 ; OUTPUT STRING IN HEX
 
 
 * INPUT: D3 REGISTER MUST HAVE THE HEX VALUE
-* OUTPUT: A2 REGISTER    
+* OUTPUT: A2 REGISTER
 * REGISTERS USED: D4 FOR COUNTER
-                ; D2 FOR COPY OF D3 INPUT VALUE
- 
-*------ DEMO OF TEST SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION)----------------------*  
+                ; D7 FOR COPY OF D3 INPUT VALUE
+
+*------ DEMO OF TEST SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION)----------------------*
 *            LEA         <yourVariable>, A2        ; LOAD ADDRESS OF your variable TO A2
-*            MOVE.L      #$92FC04BF,D3             ; TEST VALUE OF '92FC04BF' IN HEX IS USED 
-*            JSR         L_HEXTOASCII              ; JUMP TO SUBROUTINE THAT CONVERTS LONG IN HEX TO ASCII VALUE            
-*            LEA         <yourVariable>, A1        ; WILL DISPLAY THE ASCII VALUE 
+*            MOVE.L      #$92FC04BF,D3             ; TEST VALUE OF '92FC04BF' IN HEX IS USED
+*            JSR         L_HEXTOASCII              ; JUMP TO SUBROUTINE THAT CONVERTS LONG IN HEX TO ASCII VALUE
+*            LEA         <yourVariable>, A1        ; WILL DISPLAY THE ASCII VALUE
 *            MOVE.L      #13, D0                   ; USED FOR TRAP #15
-*            TRAP        #15                       ; PRINT VALUE IN A1 
-*------ END OF DEMO OF SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION) -----------------* 
-             
+*            TRAP        #15                       ; PRINT VALUE IN A1
+*------ END OF DEMO OF SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION) -----------------*
+
 L_HEXTOASCII:
-            MOVE.B      #$8, D4         ; 8 IS THE COUNTER (LIMIT) SINCE WE OPERATE ON THE LONG                
+            MOVE.B      #$8, D4         ; 8 IS THE COUNTER (LIMIT) SINCE WE OPERATE ON THE LONG
             BRA         L_HEXTOASCII_LOOP   ; EXECUTE LOOP THAT CONVERTS HEX TO ASCII
-            RTS                         ; RETURN FROM SUBROUTINE 
- 
-L_HEXTOASCII_LOOP:    
+            RTS                         ; RETURN FROM SUBROUTINE
+
+L_HEXTOASCII_LOOP:
             ROL.L       #4, D3          ; SHIFTS BITS TO LEFT AND ROTATES. FIRST BIT BECOMES LAST
-            MOVE.L      D3,D2           ; STORE COPY AT D2 WHICH WILL HAVE BITS SHIFTED
-            AND.L       #$0000000F,D2   ; UPDATE ADD BITS TO 0 EXCEPT FOR LAST ONE
-            CMP.B       #9, D2          ; CHECK IF MORE THAN 9 (10 IS A, ETC)
+            MOVE.L      D3,D7           ; STORE COPY AT D2 WHICH WILL HAVE BITS SHIFTED
+            AND.L       #$0000000F,D7   ; UPDATE ADD BITS TO 0 EXCEPT FOR LAST ONE
+            CMP.B       #9, D7          ; CHECK IF MORE THAN 9 (10 IS A, ETC)
             BGT         L_ISLETTER      ; CONVERT LETTER BASED ON ASCII TABLE
-            
-L_ISDIGIT     
-            ADD.W       #$30,D2         ; IS A NUMBER, SO ADD #$30 PER ASCII TABLE
+
+L_ISDIGIT
+            ADD.W       #$30,D7         ; IS A NUMBER, SO ADD #$30 PER ASCII TABLE
             BRA         NEXT_L_H2A      ; CONTINUE AFTER DIGIT CONVERSION
-            
-L_ISLETTER    
-            ADD.W       #$37,D2         ; IS A CHAR (IS AT LEAST 10), SO ADD $37 (65-10=55 IN DECIMAL WHICH IS $37)
-            BRA         NEXT_L_H2A      ; CONVERT THE LETTER TO ASCII LETTER             
-            
-NEXT_L_H2A  
-            MOVE.B      D2, (A2)+       ; STORE EACH BIT TO A1 IN RIGHT ORDER
+
+L_ISLETTER
+            ADD.W       #$37,D7         ; IS A CHAR (IS AT LEAST 10), SO ADD $37 (65-10=55 IN DECIMAL WHICH IS $37)
+            BRA         NEXT_L_H2A      ; CONVERT THE LETTER TO ASCII LETTER
+
+NEXT_L_H2A
+            MOVE.B      D7, (A2)+       ; STORE EACH BIT TO A1 IN RIGHT ORDER
             SUBQ        #1, D4          ; DECREMENT COUNTER
             CMP.B       #0, D4          ; CHECK IF END OF LOOP
             BNE         L_HEXTOASCII_LOOP   ; IF NOT, LOOP AGAIN
-            
-            MOVE.B      #0, (A2)        ; ASCII IS COMPLETE. PLACES NULL AT THE END OF STRING. 
-            SUB         #$8, A2         ; RETURNS TO THE START OF THE STRING 
-            RTS                        ; RETURN FROM SUBROUTINE
-                                          
-* ================== END OF SUBROUTINE TO CONVERT LONG HEX TO ASCII ================== * 
 
+            MOVE.B      #0, (A2)        ; ASCII IS COMPLETE. PLACES NULL AT THE END OF STRING.
+            SUB         #$8, A2         ; RETURNS TO THE START OF THE STRING
+            RTS                        ; RETURN FROM SUBROUTINE
+
+* ================== END OF SUBROUTINE TO CONVERT LONG HEX TO ASCII ================== *
 
 
 
