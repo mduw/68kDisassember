@@ -1590,71 +1590,171 @@ GROUP4OPCODE
 ;
 ; THESE OPCODES INCLUDE: SUB
 ;
-; NOT TESTED YET NOT TESTED YET NOT TESTED YET NOT TESTED YET!!!!!!!!!!!
+; 
 ;
 ;
 GROUP5OPCODE
-            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED OPCODE BACK INTO D2
-            MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED OPCODE BACK INTO STACK
+            ; STEP 1: LOAD OPWORD
+            MOVE.B      #'S',(A6)+
+            MOVE.B      #'U',(A6)+
+            MOVE.B      #'B',(A6)+
+            MOVE.B      #TAB,(A6)+
             
-            AND.L       #$00000FF0,D2   ; GET THE MIDDLE 2 HEX DIGITS
-            LSR.L       #4,D2           ; SHIFT ALL VALUES ONE TO THE RIGHT
+            ; STEP 2: DETERMINE SIZE
+            MOVEM.L     (SP)+,D2        ; MOVE FULL INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE INSTRUCTION BACK INTO STACK
+            
+            AND.L       #$000000F0,D2   ; MASK EVERYTHING EXCEPT ONE HEX VALUE
+            LSR.L       #4,D2           ; SHIFT HEX VALUE TO LSB
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            LSR.L       #8,D2           ; SHIFT BITS 2 TO THE RIGHT
+            AND.L       #$00000011,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
+            JSR         SETSIZE
+            
+            ; STEP 3: DETERMINE OPMODE (EA -> Dn vs Dn -> EA)
+            MOVEM.L     (SP)+,D2        ; POP OFF FULL INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE FULL INSTRUCTION BACK INTO STACK
+            AND.L       #$00000FF0,D2   ; MASK EVERYTHING EXCEPT TWO HEX VALUES
+            LSR.L       #4,D2           ; SHIFT HEX VALUES 1 TO THE RIGHT
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            AND.L       #$00010000,D2
+            CMP.L       #$00010000,D2
+            BGE         SUBDNEA
+            ; OTHERWISE IT'S SUNEADN
+
+SUBEADN
+            ; STEP 4: DETERMINE EA MODE
+            ; STEP 5: DETERMINE EA REGISTER
+            MOVEM.L     (SP)+,D2        ; MOVE ENTIRE UNDECODED INSTRUCTION INTO D2
+            MOVEM.L     D2,-(SP)        ; MOVE ENTIRE UNDECODED INSTRUCTION BACK INTO STACK
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            JSR         EASTUFF2
+            
+            MOVE.B      #',',(A6)+
+            
+            ; STEP 6: DETERMINE DESTINATION REGISTER
+            MOVEM.L     (SP)+,D2        ; MOVE UNDECIPHERED HEX INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE INSTRUCTION IN STACK
+            
+            AND.L       #$00000F00,D2   ; MASK EVERYTHING EXCEPT 1 VALUE
+            LSR.L       #8,D2           ; SHIFT VALUE TO LSB
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            LSR.L       #4,D2           
+            
+            MOVE.B      #'D',(A6)+
+            JSR         DETERMINEREG
+            
+            ; STEP 7: PRINT IT OUT
+            JMP         GOOD_OPCODE
+
+
+                                    
+SUBDNEA
+            ; STEP 4: DETERMINE SOURCE REGISTER
+            MOVE.B      #'D',(A6)+
+            
+            MOVEM.L     (SP)+,D2        ; MOVE ENTIRE UNDECODED INSTRUCTION INTO D2
+            MOVEM.L     D2,-(SP)        ; MOVE ENTIRE UNDECODED INSTRUCTION BACK INTO STACK
+            AND.L       #$00000F00,D2   ; MASK EVERYTHING EXCEPT ONE HEX VALUE
+            
+            LSR.L       #8,D2           ; SHIFT HEX VALUE TO LSB
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            AND.L       #$00001110,D2   ; MASK EVERYTHING BUT THREE BITS
+            LSR.L       #4,D2           ; SHIFT EVERYTHING 1 TO THE RIGHT
+            
+            JSR         DETERMINEREG
+            MOVE.B      #',',(A6)+
+            
+            ; STEP 5: DETERMINE EA MODE
+            ; STEP 6: DETERMINE EA REGISTER
+            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECODED INSTRUCTION BACK INTO D2
+            MOVEM.      D2,(SP)-        ; MOVE FULL UNDECODED INSTRUCTION BACK INTO STACK
+            
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT LAST TWO HEX VALUES
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            JSR         EASTUFF2
+
+            ;STEP 7: PRINT IT OUT
+            JMP         GOOD_OPCODE
+
+
+
+
+
+
+
+
+
+
+
+
+
+            ;MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED OPCODE BACK INTO D2
+            ;MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED OPCODE BACK INTO STACK
+            
+            ;AND.L       #$00000FF0,D2   ; GET THE MIDDLE 2 HEX DIGITS
+            ;LSR.L       #4,D2           ; SHIFT ALL VALUES ONE TO THE RIGHT
             
             
-            JSR         CONVERT2BINARY  ; CONVERT THEM INTO BINARY
-            MOVEM.L     D2,-(SP)        ; SAVE BINARY BITS INTO STACK TEMPORARILY
-            AND.L       #$11100000,D2   ; MASKS EVERYTHING EXCEPT 3 BITS TO DETERMINE REGISTER #
+            ;JSR         CONVERT2BINARY  ; CONVERT THEM INTO BINARY
+            ;MOVEM.L     D2,-(SP)        ; SAVE BINARY BITS INTO STACK TEMPORARILY
+            ;AND.L       #$11100000,D2   ; MASKS EVERYTHING EXCEPT 3 BITS TO DETERMINE REGISTER #
             
-            CMP.L       #$00000000,D2   ; D0
+            ;CMP.L       #$00000000,D2   ; D0
             ;BEQ         D0FLAG
-            CMP.L       #$00100000,D2   ; D1
+            ;CMP.L       #$00100000,D2   ; D1
             ;BEQ         D1FLAG
-            CMP.L       #$01000000,D2   ; D2
+            ;CMP.L       #$01000000,D2   ; D2
             ;BEQ         D2FLAG
-            CMP.L       #$01100000,D2   ; D3
+            ;CMP.L       #$01100000,D2   ; D3
             ;BEQ         D3FLAG
-            CMP.L       #$10000000,D2   ; D4
+            ;CMP.L       #$10000000,D2   ; D4
             ;BEQ         D4FLAG
-            CMP.L       #$10100000,D2   ; D5
+            ;CMP.L       #$10100000,D2   ; D5
             ;BEQ         D5FLAG
-            CMP.L       #$11000000,D2   ; D6
+            ;CMP.L       #$11000000,D2   ; D6
             ;BEQ         D6FLAG
-            CMP.L       #$11100000,D2   ; D7
+            ;CMP.L       #$11100000,D2   ; D7
             ;BEQ         D7FLAG
             
-            MOVEM.L     (SP)+,D2        ; MOVE BINARY BITS BACK INTO D2
-            AND.L       #$00011100,D2   ; MASKS EVERYTHING EXCEPT 3 BITS TO DETERMINE OPMODE
+            ;MOVEM.L     (SP)+,D2        ; MOVE BINARY BITS BACK INTO D2
+            ;AND.L       #$00011100,D2   ; MASKS EVERYTHING EXCEPT 3 BITS TO DETERMINE OPMODE
             
-            CMP.L       #$00000000,D2   ; En^Dn BYTE
+            ;CMP.L       #$00000000,D2   ; En^Dn BYTE
             ;BEQ        ENDNBYTEFLAG
-            CMP.L       #$00000100,D2   ; En^Dn WORD
+            ;CMP.L       #$00000100,D2   ; En^Dn WORD
             ;BEQ        ENDNWORDFLAG
-            CMP.L       #$00001000,D2   ; En^Dn LONG
+            ;CMP.L       #$00001000,D2   ; En^Dn LONG
             ;BEQ        ENDNLONGFLAG
-            CMP.L       #$00010000,D2   ; Dn^En BYTE
+            ;CMP.L       #$00010000,D2   ; Dn^En BYTE
             ;BEQ        DNENBYTEFLAG
-            CMP.L       #$00010100,D2   ; Dn^En WORD
+            ;CMP.L       #$00010100,D2   ; Dn^En WORD
             ;BEQ        DNENWORDFLAG
-            CMP.L       #$00011000,D2   ; Dn^En LONG
+            ;CMP.L       #$00011000,D2   ; Dn^En LONG
             
             ;BAD INPUT
-            CMP.L       #$00001100,D2
-            BEQ         BAD_OPCODE
-            CMP.L       #$00011100,D2
-            BEQ         BAD_OPCODE
+            ;CMP.L       #$00001100,D2
+            ;BEQ         BAD_OPCODE
+            ;CMP.L       #$00011100,D2
+            ;BEQ         BAD_OPCODE
             
-            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED OPCODE INTO D2
-            MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED OPCODE INTO STACK
+            ;MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED OPCODE INTO D2
+            ;MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED OPCODE INTO STACK
             
-            LSL.L       #8,D2           ; THIS CAN PROBABLY BE SIMPLIFIED
-            LSL.L       #8,D2
-            LSL.L       #8,D2
-            LSR.L       #8,D2
-            LSR.L       #8,D2
-            LSR.L       #8,D2           ; GET THE FIRST 2 HEX DIGITS
-            JSR         CONVERT2BINARY  ; CONVERT THEM TO BINARY
+            ;LSL.L       #8,D2           ; THIS CAN PROBABLY BE SIMPLIFIED
+            ;LSL.L       #8,D2
+            ;LSL.L       #8,D2
+            ;LSR.L       #8,D2
+            ;LSR.L       #8,D2
+            ;LSR.L       #8,D2           ; GET THE FIRST 2 HEX DIGITS
+            ;JSR         CONVERT2BINARY  ; CONVERT THEM TO BINARY
             
-            JMP         EASTUFF
+            ;JMP         EASTUFF
             
             
 
@@ -1706,7 +1806,7 @@ MULSCODE
             JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             MOVEM.L     D2,-(SP)        ; MOVE BINARY BITS INTO STACK
             
-            ; DIVU CANNOT BE An
+            ; MULS CANNOT BE An
             ; An = XX00 1RRR
             AND.L       #$00111000,D2   ; MASK EVERYTHING EXCEPT THREE BITS
             CMP.L       #$00001000,D2
@@ -1758,6 +1858,7 @@ ANDCODE
             MOVE.B      #'N',(A6)+
             MOVE.B      #'D',(A6)+
             MOVE.B      #TAB,(A6)+
+            
             ; STEP 2: DETERMINE SIZE
             MOVEM.L     (SP)+,D2        ; MOVE FULL INSTRUCTION BACK INTO D2
             MOVEM.L     D2,-(SP)        ; SAVE INSTRUCTION BACK INTO STACK
@@ -1769,8 +1870,6 @@ ANDCODE
             LSR.L       #8,D2           ; SHIFT BITS 2 TO THE RIGHT
             AND.L       #$00000011,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
             JSR         SETSIZE
-            
-            ; tab should really be here
             
             ; STEP 3: DETERMINE OPMODE (EA -> Dn vs Dn -> EA)
             MOVEM.L     (SP)+,D2        ; POP OFF FULL INSTRUCTION BACK INTO D2
@@ -1840,13 +1939,12 @@ ANDDNEA
             ; STEP 5: DETERMINE EA MODE
             ; STEP 6: DETERMINE EA REGISTER
             MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECODED INSTRUCTION BACK INTO D2
-            MOVEM.      D2,(SP)-        ; MOVE FULL UNDECODED INSTRUCTION BACK INTO STACK
+            MOVEM.L     D2,-(SP)        ; MOVE FULL UNDECODED INSTRUCTION BACK INTO STACK
             
             AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT LAST TWO HEX VALUES
             JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             MOVEM.L     D2,-(SP)        ; SAVE BINARY BITS INTO STACK
             
-            ; STOPPED HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ; AND CANNOT BE An
             ; An = XX00 1RRR
             AND.L       #$00111000,D2   ; MASK EVERYTHING EXCEPT THREE BITS
@@ -1886,7 +1984,6 @@ ANDDNEA
             ;JMP         EASTUFF
             
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; GROUP 7 OPCODES
@@ -1894,39 +1991,132 @@ ANDDNEA
 ; THESE OPCODES INCLUDE: ADD
 ;
 GROUP7OPCODE
-            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
-            MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
+            ; STEP 1: LOAD OPWORD
+            MOVE.B      #'A',(A6)+
+            MOVE.B      #'D',(A6)+
+            MOVE.B      #'D',(A6)+
+            MOVE.B      #TAB,(A6)+
             
-            AND.L       #$00000FF0,D2   ; MASK EVERYTHING EXCEPT TWO HEX VALUES TO DETERMINE REGISTER AND OPMODE
-            LSR.L       #4,D2           ; SHIFTS THESE TWO BITS ONE SPACE TO THE RIGHT
-            AND.L       #$000000FF,D2   ; MASKS EVERYTHING EXCEPT TWO LSBs
+            ; STEP 2: DETERMINE SIZE
+            MOVEM.L     (SP)+,D2        ; MOVE FULL INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE INSTRUCTION BACK INTO STACK
+            
+            AND.L       #$000000F0,D2   ; MASK EVERYTHING EXCEPT ONE HEX VALUE
+            LSR.L       #4,D2           ; SHIFT HEX VALUE TO LSB
             JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             
-            MOVEM.L     (SP)+,D2        ; MOVE BINARY BITS BACK INTO D2
-            AND.L       #$00011100,D2      ; MASK EVERYTHING EXCEPT THREE BITS TO CHECK FOR OPMODE
-            CMP.L       #$00000000,D2      ; EA + Dn BYTE
+            LSR.L       #8,D2           ; SHIFT BITS 2 TO THE RIGHT
+            AND.L       #$00000011,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
+            JSR         SETSIZE
+            
+            ; STEP 3: DETERMINE OPMODE (EA -> Dn vs Dn -> EA)
+            MOVEM.L     (SP)+,D2        ; POP OFF FULL INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE FULL INSTRUCTION BACK INTO STACK
+            AND.L       #$00000FF0,D2   ; MASK EVERYTHING EXCEPT TWO HEX VALUES
+            LSR.L       #4,D2           ; SHIFT HEX VALUES 1 TO THE RIGHT
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            AND.L       #$00010000,D2
+            CMP.L       #$00010000,D2
+            BGE         ADDDNEA
+            ; OTHERWISE IT'S ADDEADN
+
+ADDEADN
+            ; STEP 4: DETERMINE EA MODE
+            ; STEP 5: DETERMINE EA REGISTER
+            MOVEM.L     (SP)+,D2        ; MOVE ENTIRE UNDECODED INSTRUCTION INTO D2
+            MOVEM.L     D2,-(SP)        ; MOVE ENTIRE UNDECODED INSTRUCTION BACK INTO STACK
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT TWO LSBs
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            JSR         EASTUFF2
+            
+            MOVE.B      #',',(A6)+
+            
+            ; STEP 6: DETERMINE DESTINATION REGISTER
+            MOVEM.L     (SP)+,D2        ; MOVE UNDECIPHERED HEX INSTRUCTION BACK INTO D2
+            MOVEM.L     D2,-(SP)        ; SAVE INSTRUCTION IN STACK
+            
+            AND.L       #$00000F00,D2   ; MASK EVERYTHING EXCEPT 1 VALUE
+            LSR.L       #8,D2           ; SHIFT VALUE TO LSB
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            LSR.L       #4,D2           
+            
+            MOVE.B      #'D',(A6)+
+            JSR         DETERMINEREG
+            
+            ; STEP 7: PRINT IT OUT
+            JMP         GOOD_OPCODE
+
+
+                                    
+ADDDNEA
+            ; STEP 4: DETERMINE SOURCE REGISTER
+            MOVE.B      #'D',(A6)+
+            
+            MOVEM.L     (SP)+,D2        ; MOVE ENTIRE UNDECODED INSTRUCTION INTO D2
+            MOVEM.L     D2,-(SP)        ; MOVE ENTIRE UNDECODED INSTRUCTION BACK INTO STACK
+            AND.L       #$00000F00,D2   ; MASK EVERYTHING EXCEPT ONE HEX VALUE
+            
+            LSR.L       #8,D2           ; SHIFT HEX VALUE TO LSB
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            AND.L       #$00001110,D2   ; MASK EVERYTHING BUT THREE BITS
+            LSR.L       #4,D2           ; SHIFT EVERYTHING 1 TO THE RIGHT
+            
+            JSR         DETERMINEREG
+            MOVE.B      #',',(A6)+
+            
+            ; STEP 5: DETERMINE EA MODE
+            ; STEP 6: DETERMINE EA REGISTER
+            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECODED INSTRUCTION BACK INTO D2
+            MOVEM.      D2,(SP)-        ; MOVE FULL UNDECODED INSTRUCTION BACK INTO STACK
+            
+            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT LAST TWO HEX VALUES
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            JSR         EASTUFF2
+
+            ;STEP 7: PRINT IT OUT
+            JMP         GOOD_OPCODE
+
+            
+
+
+
+
+
+
+            ;MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
+            ;MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
+            
+            ;AND.L       #$00000FF0,D2   ; MASK EVERYTHING EXCEPT TWO HEX VALUES TO DETERMINE REGISTER AND OPMODE
+            ;LSR.L       #4,D2           ; SHIFTS THESE TWO BITS ONE SPACE TO THE RIGHT
+            ;AND.L       #$000000FF,D2   ; MASKS EVERYTHING EXCEPT TWO LSBs
+            ;JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            
+            ;MOVEM.L     (SP)+,D2        ; MOVE BINARY BITS BACK INTO D2
+            ;AND.L       #$00011100,D2      ; MASK EVERYTHING EXCEPT THREE BITS TO CHECK FOR OPMODE
+            ;CMP.L       #$00000000,D2      ; EA + Dn BYTE
             ;BEQ        EADNBYTEFLAG
-            CMP.L       #$00000100,D2      ; EA + Dn WORD
+            ;CMP.L       #$00000100,D2      ; EA + Dn WORD
             ;BEQ        EADNWORDFLAG
-            CMP.L       #$00001000,D2      ; EA + Dn LONG
+            ;CMP.L       #$00001000,D2      ; EA + Dn LONG
             ;BEQ        EADNLONGFLAG
-            CMP.L       #$00010000,D2      ; Dn + EA BYTE
+            ;CMP.L       #$00010000,D2      ; Dn + EA BYTE
             ;BEQ        DNEABYTEFLAG
-            CMP.L       #$00010100,D2      ; Dn + EA WORD
+            ;CMP.L       #$00010100,D2      ; Dn + EA WORD
             ;BEQ        DNEAWORDFLAG
-            CMP.L       #$00011000,D2      ; Dn + EA LONG
+            ;CMP.L       #$00011000,D2      ; Dn + EA LONG
             ;BEQ        DNEALONGFLAG
-            CMP.L       #$00011100,D2      ; BAD OPCODE
-            BEQ         BAD_OPCODE
+            ;CMP.L       #$00011100,D2      ; BAD OPCODE
+            ;BEQ         BAD_OPCODE
             
-            MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
-            MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
+            ;MOVEM.L     (SP)+,D2        ; MOVE FULL UNDECIPHERED HEX INSTRUCTION BACK INTO D2
+            ;MOVEM.L     D2,-(SP)        ; SAVE FULL UNDECIPHERED HEX INSTRUCTION INTO STACK
             
-            AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT THE TWO LSBs
+            ;AND.L       #$000000FF,D2   ; MASK EVERYTHING EXCEPT THE TWO LSBs
             
-            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
+            ;JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             
-            JMP         EASTUFF
+            ;JMP         EASTUFF
 
 
             
@@ -2711,6 +2901,7 @@ LINES_ON_SCREEN DS.L    1
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
