@@ -20,11 +20,20 @@ START:                  ; first instruction of program
     ;LEA     (A3),A4
     
     ;JSR     (A2)
+    
+    ;MULS.W      D7,D3
+    ;MULS.W      (A5)+,D4
+    
+    ;AND.L   D1,D2
+    ;AND.L   D1,-(A2)
+    ;AND.W   -(A2),D3
     SIMHALT             ; halt simulator
 
 * Put variables and constants here
 
     END    START        ; last line of source
+
+
 
 *~Font name~Courier New~
 *~Font size~10~
