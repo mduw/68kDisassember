@@ -509,64 +509,6 @@ NEXT_L_H2A
 
 */////////////////////////////////////////////////////////////////
 *
-*                        WORD HEX TO ASCII
-*
-*
-*////////////////////////////////////////////////////////////////
-
- 
-* INPUT: D3 REGISTER MUST HAVE THE HEX VALUE
-* OUTPUT: A2 REGISTER    
-* REGISTERS USED: D4 FOR COUNTER
-                ; D2 FOR COPY OF D3 INPUT VALUE
- 
-*------ DEMO OF TEST SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION)----------------------*  
-*            LEA         <yourVariable>, A2        ; LOAD ADDRESS OF your variable TO A2
-*            MOVE.L      #$A2FC,D3                 ; TEST VALUE OF 'A2FC' IN HEX IS USED 
-*            JSR         W_HEXTOASCII              ; JUMP TO SUBROUTINE THAT CONVERTS WORD IN HEX TO ASCII VALUE            
-*            LEA         <yourVariable>, A1        ; WILL DISPLAY THE ASCII VALUE 
-*            MOVE.L      #13, D0                   ; USED FOR TRAP #15
-*            TRAP        #15                       ; PRINT VALUE IN A1 
-*------ END OF DEMO OF SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION) -----------------*   
-          
-W_HEXTOASCII:
-            CLR         D2
-            CLR         D4
-            MOVE.B      #$4, D4         ; 4 IS THE COUNTER (LIMIT) SINCE WE OPERATE ON THE WORD                
-            BRA         W_HEXTOASCII_LOOP   ; EXECUTE LOOP THAT CONVERTS HEX TO ASCII
-            RTS                         ; RETURN FROM SUBROUTINE 
- 
-W_HEXTOASCII_LOOP:    
-            ROL.L       #4, D3          ; SHIFTS BITS TO LEFT AND ROTATES. FIRST BIT BECOMES LAST
-            MOVE.W      D3,D2           ; STORE COPY AT D2 WHICH WILL HAVE BITS SHIFTED
-            AND.L       #$0000000F,D2   ; UPDATE ADD BITS TO 0 EXCEPT FOR LAST ONE
-            CMP.B       #9, D2          ; CHECK IF MORE THAN 9 (10 IS A, ETC)
-            BGT         ISLETTER        ; CONVERT LETTER BASED ON ASCII TABLE
-            
-ISDIGIT     ADD.W       #$30,D2         ; IS A NUMBER, SO ADD #$30 PER ASCII TABLE
-            BRA         NEXT_W_H2A      ; CONTINUE AFTER DIGIT CONVERSION
-            
-ISLETTER    ADD.W       #$37,D2         ; IS A CHAR (IS AT LEAST 10), SO ADD $37 (65-10=55 IN DECIMAL WHICH IS $37)
-            BRA         NEXT_W_H2A      ; CONVERT THE LETTER TO ASCII LETTER             
-            
-NEXT_W_H2A  MOVE.B      D2, (A2)+       ; STORE EACH BIT TO A1 IN RIGHT ORDER
-            SUBQ        #1, D4          ; DECREMENT COUNTER
-            CMP.B       #0, D4          ; CHECK IF END OF LOOP
-            BNE         W_HEXTOASCII_LOOP   ; IF NOT, LOOP AGAIN
-            
-            MOVE.B      #0, (A2)        ; ASCII IS COMPLETE. PLACES NULL AT THE END OF STRING. 
-            SUB         #$4,A2          ; RETURNS TO THE START OF THE STRING 
-            RTS                        ; RETURN FROM SUBROUTINE
-            
-                                
-* ================== END OF SUBROUTINE TO CONVERT WORD HEX TO ASCII ================== * 
-
-
-
-
-
-*/////////////////////////////////////////////////////////////////
-*
 *                        DECODE OPCODES
 *
 *
