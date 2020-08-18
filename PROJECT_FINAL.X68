@@ -26,9 +26,9 @@ START       ORG         $1000
 
 * ================= WELCOME SCREEN PROMPT ================= *
 WELC        
-*            LEA         TEAMNAME,A1     ; DISPLAY TEAM NAME
-*            MOVE.B      #14,D0
-*            TRAP        #15 
+            LEA         TEAMNAME,A1     ; DISPLAY TEAM NAME
+            MOVE.B      #14,D0
+            TRAP        #15 
 
             
             MOVE.B      #1, LINES_ON_SCREEN ; START COUNTING LINES ON SCREEN
@@ -49,7 +49,7 @@ STADDR      ADD.B       #1, LINES_ON_SCREEN
 
 
 STORESTARTADD
-            CMP.B       #$8,D1          ; VALIDATES THAT ADDRESS PROVIDED IS UNDER 8 DIGITS
+            CMP.B       #$8,D1          ; STORE STARTING ADDRESS
             BLE         STORESTARTADD_1
 
             ADD.B       #1, LINES_ON_SCREEN
@@ -242,9 +242,6 @@ STARTENDMISMATCH
             TRAP        #15
             BRA         EADDR
 
-            ; TODO: PRINT (ADDRESS INCREMENTED), OPCODE AND REGISTERS
-*--- EXPECTED TO PRINT "(ADDRESS)(TAB)(DECODED OPCODE)(TAB)(EAS IF APPLICABLE)(NEW LINE)(#0)----*
-*--- RIGHT NOW PRINTS INCREMENTED FROM START ADDRESS ADDRESSES----*
 
 STARTNEWLINE ;MOVE.B  #0, LINES_ON_SCREEN ; START COUNTING LINES ON SCREEN
 
@@ -277,10 +274,9 @@ ADDRTOLINELOOP:
             ; PLACE TO D2 FOR PROCESSING (DECODING ONLY IF KNOW THAT THIS IS NOT END OF FILE)
 
             ; GO TO THE SUBROUTINES FOR THE OP CODES
-            ;NEED TO PUT 4 HEX VALUES INTO D2 FOR PROCESSING ->
+            ; NEED TO PUT 4 HEX VALUES INTO D2 FOR PROCESSING ->
             ; SO SAY AT LOCATION $9000 WE HAVE '4E71' SO NEED TO MOVE IT TO D2
             ; 9000 IS INCREMENTED WITH EACH LOOP AND SAVED IN D5 AND A4
-            ; the code below works, but need to have the confirmation from the opcodes before calling it
 
 ISOPCODEVALID:
             MOVE.W  (A4),D2      ; MOVE CONTENTS OF CURRENT LOCATION TO DECOdE THE OPCODE
@@ -309,62 +305,24 @@ PRINTA6     BRA      FINISHOUTPUTLINE ; IF VALID, SKIP INVALID MESSAGE
 
 INVALID_OPCODE:
             MOVE.L      #$5009,A6
-            ; PRINT ERROR MESSAGE AND MOVE TO NEXT LINE
-            MOVE.B      #'E',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'r',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'r',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'o',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'r',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #':',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'I',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'n',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'v',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'a',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'l',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'i',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'d',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'o',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'p',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'c',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'o',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'d',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'e',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #',',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'p',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'r',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'i',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'n',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'t',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'i',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'n',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'g',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'o',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'u',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'t',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'d',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'a',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'t',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #'a',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #':',(A6)+   ; ERROR MESSAGE
-            MOVE.B      #CR,(A6)+    ; ERROR MESSAGE
-            MOVE.B      #LF,(A6)+    ; ERROR MESSAGE
+            
             MOVE.B      #'D',(A6)+   ; ERROR MESSAGE
             MOVE.B      #'A',(A6)+   ; ERROR MESSAGE
             MOVE.B      #'T',(A6)+   ; ERROR MESSAGE
             MOVE.B      #'A',(A6)+   ; ERROR MESSAGE
             MOVE.B      #TAB,(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
+            MOVE.B      #' ',(A6)+   ; ERROR MESSAGE
             MOVE.B      #DOLLAR,(A6)+   ; ERROR MESSAGE
+            
 
 ADDRFORERROR:
             MOVE.L  D2,D3   ; COPY CURRENT ADDRESS INTO D3 FOR CONVERSION
             JSR L_HEXTOASCII    ; FIRST CONVERT ADDRESS STORED IN HEX INTO ASCII -> A2 HAS RESULT
             ; SINCE IT IS A $FFFF (WORD), NEED TO SKIP FIRST 4 HEX DIGITS IN A2
-            ADD.B   #1, LINES_ON_SCREEN
+            
 
 ADDRFORERRORLOOP:
             MOVE.B      (A2)+, (A6)+    ; CARRY OVER ONE CHAR AT A TIME FROM A2 TO A6
@@ -455,9 +413,12 @@ GOAGAIN     LEA         AGAINPROMPT,A1  ; LOAD AGAIN PROMPT
 
             JMP         DONE                ; FINISH
 
+            
 
-
-DONE        MOVE.B      #9,D0           ; USING TRAP TASK #9
+DONE        LEA         EXIT_MESS,A1
+            MOVE.B      #13,D0
+            TRAP        #15
+            MOVE.B      #9,D0           ; USING TRAP TASK #9
             TRAP        #15             ; HALT SIMULATOR
 
 
@@ -555,16 +516,6 @@ doswap      SWAP    D3
 
 *=========  END OF SUBROUTINE FOR HEX2BIN  =========*
 
-* ------------------ START OF SAMPLE FOR ASCII-TO-HEX CONVERSION (TO BE REMOVED ONCE COMPLETE)------------------*
-* MOVE INPUT ADDRESS TO A1 BEFORE IMPLEMENTING THESE LINES
-
-*            JSR         ASCII2HEX       ; ASCII2HEX CONVERTS THE ANY VALUE AT A1 TO HEX (since task #2 store input at A1)
-*            JSR         DISP            ; DISPLAY OUTPUT (OPTIONAL) FOR TESTING ONLY
-*            MOVEA.L     #0,A1           ; RESET A1
-*            MOVE.L      #0,D0           ; RESET D0
-*            BRA         STADDR
-
-* ------------------ END OF SAMPLE FOR ASCII-TO-HEX CONVERSION (TO BE REMOVED ONCE COMPLETE)------------------*
 
 
 
@@ -654,15 +605,6 @@ DISP        LEA         (A3),A1 ; OUTPUT STRING IN HEX
 * REGISTERS USED: D4 FOR COUNTER
                 ; D7 FOR COPY OF D3 INPUT VALUE
 
-*------ DEMO OF TEST SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION)----------------------*
-*            LEA         <yourVariable>, A2        ; LOAD ADDRESS OF your variable TO A2
-*            MOVE.L      #$92FC04BF,D3             ; TEST VALUE OF '92FC04BF' IN HEX IS USED
-*            JSR         L_HEXTOASCII              ; JUMP TO SUBROUTINE THAT CONVERTS LONG IN HEX TO ASCII VALUE
-*            LEA         <yourVariable>, A1        ; WILL DISPLAY THE ASCII VALUE
-*            MOVE.L      #13, D0                   ; USED FOR TRAP #15
-*            TRAP        #15                       ; PRINT VALUE IN A1
-*------ END OF DEMO OF SAMPLE (TO BE REMOVED BEFORE PROJECT SUBMISSION) -----------------*
-
 L_HEXTOASCII:
             MOVE.B      #$8, D4         ; 8 IS THE COUNTER (LIMIT) SINCE WE OPERATE ON THE LONG
             BRA         L_HEXTOASCII_LOOP   ; EXECUTE LOOP THAT CONVERTS HEX TO ASCII
@@ -705,12 +647,6 @@ NEXT_L_H2A
 *
 *////////////////////////////////////////////////////////////////
 
-; ASSUMPTION: THE OPCODE IS STORED IN D2 AND CONTAINS THE ENTIRE THING
-; (ALL 4 HEX VALUES, so for example D2 would be 0x00004E71 (NOP))
-; FOR FUTURE DEVELOPMENTS, WHENEVER DECODING AN OPCODE, ALWAYS HAVE THE
-; FIRST THING INSIDE THE STACK BE THE FULL UNDECIPHERED OPCODE. THIS IS
-; NECESSARY FOR DEALING WITH BAD OPCODES
-; STACK SHOULD NOT BE USED PRIOR TO THIS! SHOULD BE AT $01000000 WITH NOTHING IN IT
 CHECKOPCODE
             MOVE.W      (A4),D2
             MOVE.L      D2,-(SP)
@@ -719,9 +655,9 @@ CHECKOPCODE
             LSR.L       #4,D2          
             
             CMP.L       #$00000000,D2
-            BEQ         SPECIAL_GROUP
+            BEQ         SPECIAL_GROUP   ; SPECIAL GROUPS 1 HANDLING SPECIAL/INVALID OPCODES
             CMP.L       #$00000005,D2
-            BEQ         SPECIAL_GROUP2
+            BEQ         SPECIAL_GROUP2  ; SPECIAL GROUPS 2 HANDLING SPECIAL/INVALID OPCODES
             CMP.L       #$00000003,D2   ; OPCODE IS GROUP 1
             BLE         GROUP1OPCODE
             CMP.L       #$00000004,D2   ; OPCODE IS GROUP 2
@@ -741,6 +677,7 @@ CHECKOPCODE
 
             ; OTHERWISE, IT IS BAD OPCODE AND SHOULD BE DISCARDED
             JMP         BAD_OPCODE
+            
 SPECIAL_GROUP
             MOVE.W      (A4),D2
             LSR.L       #8,D2
@@ -751,6 +688,7 @@ SPECIAL_GROUP
             CMP.L       #$06,D2
             BEQ         SPECIAL_ADD_MORETHAN8
             BRA         BAD_OPCODE
+            
 SPECIAL_GROUP2
             MOVE.W      (A4),D2
             LSR.L       #8,D2
@@ -759,25 +697,25 @@ SPECIAL_GROUP2
             BRA         BAD_OPCODE
 
 SPECIAL_ADD_1TO8
-            MOVE.B      #'A',(A6)+
+            MOVE.B      #'A',(A6)+      ; LOAD OPWORD
             MOVE.B      #'D',(A6)+
             MOVE.B      #'D',(A6)+
             MOVE.W      (A4),D2
             MOVE.L      D2,D0
             AND.L       #$000000F0,D2
             LSR.L       #4,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             LSR.L       #8,D2
             CMP.W       #$0000,D2
-            BEQ         SUB_1TO8_B
+            BEQ         SUB_1TO8_B      ; BYTE
             CMP.W       #$0001,D2
-            BEQ         SUB_1TO8_W
+            BEQ         SUB_1TO8_W      ; WORD
             CMP.W       #$0010,D2
-            BEQ         SUB_1TO8_L
+            BEQ         SUB_1TO8_L      ; LONG
             BRA         BAD_OPCODE
 
 SPECIAL_ADD_MORETHAN8
-            MOVE.B      #'A',(A6)+
+            MOVE.B      #'A',(A6)+      ; LOAD OPWORD
             MOVE.B      #'D',(A6)+
             MOVE.B      #'D',(A6)+
 
@@ -785,34 +723,33 @@ SPECIAL_ADD_MORETHAN8
             MOVE.L      D2,D0
             AND.L       #$000000F0,D2
             LSR.L       #4,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             LSR.L       #8,D2
             CMP.W       #$0000,D2
-            BEQ         SUB_MORETHAN8_B
+            BEQ         SUB_MORETHAN8_B ; BYTE
             CMP.W       #$0001,D2
-            BEQ         SUB_MORETHAN8_W
+            BEQ         SUB_MORETHAN8_W ; WORD
             CMP.W       #$0010,D2
-            BEQ         SUB_MORETHAN8_L
+            BEQ         SUB_MORETHAN8_L ; LONG
             BRA         BAD_OPCODE
 
-
 SPECIAL_AND_IMMDATA
-            MOVE.B      #'A',(A6)+
+            MOVE.B      #'A',(A6)+      ; LOAD OPWORD
             MOVE.B      #'N',(A6)+
             MOVE.B      #'D',(A6)+
             MOVE.W      (A4),D2
             MOVE.L      D2,D0
             AND.L       #$000000F0,D2
             LSR.L       #4,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             LSR.L       #8,D2
             CMP.L       #$0000,D2
-            BEQ         SPECIAL_AND_B
+            BEQ         SPECIAL_AND_B   ; BYTE
             CMP.L       #$0001,D2
-            BEQ         SPECIAL_AND_W
+            BEQ         SPECIAL_AND_W   ; WORD
 
             CMP.L       #$0010,D2
-            BEQ         SPECIAL_AND_L
+            BEQ         SPECIAL_AND_L   ; LONG
 
             BRA         BAD_OPCODE
 
@@ -825,26 +762,26 @@ SPECIAL_AND_W
 SPECIAL_AND_L
             BRA         SUB_MORETHAN8_L
 
-SPECIAL_SUB_1TO8
-            MOVE.B      #'S',(A6)+
+SPECIAL_SUB_1TO8                        ; CODE FOR SUBQ
+            MOVE.B      #'S',(A6)+      ; LOAD OPWORD
             MOVE.B      #'U',(A6)+
             MOVE.B      #'B',(A6)+
             MOVE.W      (A4),D2
             MOVE.L      D2,D0
             AND.L       #$000000F0,D2
             LSR.L       #4,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             LSR.L       #8,D2
             CMP.W       #$0000,D2
-            BEQ         SUB_1TO8_B
+            BEQ         SUB_1TO8_B      ; BYTE
             CMP.W       #$0001,D2
-            BEQ         SUB_1TO8_W
+            BEQ         SUB_1TO8_W      ; WORD
             CMP.W       #$0010,D2
-            BEQ         SUB_1TO8_L
+            BEQ         SUB_1TO8_L      ; LONG
             BRA         BAD_OPCODE
 
-SPECIAL_SUB_MORETHAN8
-            MOVE.B      #'S',(A6)+
+SPECIAL_SUB_MORETHAN8                   ; CODE FOR SUBI
+            MOVE.B      #'S',(A6)+      ; LOAD OPWORD
             MOVE.B      #'U',(A6)+
             MOVE.B      #'B',(A6)+
 
@@ -855,11 +792,11 @@ SPECIAL_SUB_MORETHAN8
             JSR         CONVERT2BINARY
             LSR.L       #8,D2
             CMP.W       #$0000,D2
-            BEQ         SUB_MORETHAN8_B
+            BEQ         SUB_MORETHAN8_B ; BYTE
             CMP.W       #$0001,D2
-            BEQ         SUB_MORETHAN8_W
+            BEQ         SUB_MORETHAN8_W ; WORD
             CMP.W       #$0010,D2
-            BEQ         SUB_MORETHAN8_L
+            BEQ         SUB_MORETHAN8_L ; LONG
             BRA         BAD_OPCODE
 
 SUB_1TO8_B
@@ -897,18 +834,18 @@ SUB_1TO8_L
 
 
 
-SUB_1TO8_EA
+SUB_1TO8_EA                             ; EA FOR SUBQ
             MOVE.L      D0,D2
             AND.L       #$00000F00,D2
             LSR.L       #8,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             LSR.L       #4,D2
             JSR         SPECIAL_MEM_GETREGISTER
             JSR         PRINT_COMM
             ; GET MACHINE CODE OF INSTRUCTION
             MOVE.W      D0,D2
             AND.L       #$000000FF,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             AND.L       #$00FFF000,D2
 
             ; FOLLOWING LINES CHECK FOR EA MODE
@@ -936,9 +873,9 @@ SUB_1TO8_EA
             RTS
 
 
-SPECIAL_MEM_GETREGISTER
+SPECIAL_MEM_GETREGISTER                     ; SUBROUTINE FOR PRINTING REGISTER
             CMP.W       #$0000,D2
-            BEQ         PRINT_8         ; EX MOVE.L D2 by this step
+            BEQ         PRINT_8             ; EX MOVE.L D2 by this step
             CMP.W       #$0001,D2
             BEQ         PRINT_1
             CMP.W       #$0010,D2
@@ -954,7 +891,7 @@ SPECIAL_MEM_GETREGISTER
             CMP.W       #$0111,D2
             BEQ         PRINT_7
             RTS
-SUB_MORETHAN8_B
+SUB_MORETHAN8_B                             
             JSR         PRINT_DOT_B
             MOVE.B      #' ',(A6)+
             MOVE.B      #' ',(A6)+
@@ -973,7 +910,7 @@ SUB_MORETHAN8_B
             JSR         PRINT_COMM
             MOVE.W      D0,D2
             AND.L       #$000000FF,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY      ; CONVERT TO BINARY
             AND.L       #$00FFF000,D2
 
             ; FOLLOWING LINES CHECK FOR EA MODE
@@ -1015,7 +952,7 @@ SUB_MORETHAN8_W
             JSR         PRINT_COMM
             MOVE.W      D0,D2
             AND.L       #$000000FF,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY      ; CONVERT TO BINARY
             AND.L       #$00FFF000,D2
 
             ; FOLLOWING LINES CHECK FOR EA MODE
@@ -1060,7 +997,7 @@ SUB_MORETHAN8_L
             JSR         PRINT_COMM
             MOVE.W      D0,D2
             AND.L       #$000000FF,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY      ; CONVERT TO BINARY
             AND.L       #$00FFF000,D2
 
             ; FOLLOWING LINES CHECK FOR EA MODE
@@ -1099,25 +1036,6 @@ CONVERT2BINARY
 
             RTS
 
-
-; SUBROUTINE TO CALCULATE AND TRIGGER FLAGS FOR SOURCE MODE AND SOURCE REGISTER
-; ACCEPTS INPUT AS BINARY BITS OF LAST TWO HEX VALUES OF INSTRUCTION. EXAMPLE:
-; $00008EC0 -> $000000C0 -> %11000000
-EASTUFF
-            MOVEM.L     D2,-(SP)        ; SAVES BINARY BITS TO STACK FOR EAGROUP1/2
-            AND.L       #$00111000,D2   ; CHECK SIZE EA MODE
-            CMP.L       #$00100000,D2   ; CHECK 00XXX000 WHERE XXX IS FROM 000 TO 100
-            ; BLE         EAGROUP1        ; EA MODE IS PART OF GROUP 1
-            CMP.L       #$00111000,D2   ; CHECK 00XXX000 WHERE XXX IS 111
-            ; BEQ         EAGROUP2        ; EA MODE IS PART OF GROUP 2
-
-            JMP         BAD_OPCODE      ; INCORRECT EA
-
-            ; AND.L       #$00000111,D6     THIS WILL BE DONE INSIDE EAGROUP1 AND EAGROUP2
-
-            ; RTS NOT NECESSARY, DO NOT NEED TO RETURN TO DECIPHERING OPCODE
-
-
 EASTUFF2
             MOVEM.L     D2,-(SP)        ; SAVES BINARY BITS TO STACK FOR EAGROUP1/2
             AND.L       #$00111000,D2   ; CHECK SIZE EA MODE
@@ -1133,7 +1051,6 @@ EASTUFF2
 
             CMP.L       #$00111000,D2   ; CHECK 00XXX000 WHERE XXX IS 111
             BEQ         GROUP2_IMMADDR        ; EA MODE IS PART OF GROUP 2
-
 EASTUFF2_FINISH
             RTS
 
@@ -1162,29 +1079,29 @@ EAGROUP1
 FINISH_GROUP2
             RTS
 
-GROUP2_IMMADDR
+GROUP2_IMMADDR                          ; SUBROUTINE FOR HANDLING ABSOLUTE ADDR .W .L AND IMMEDIATE DATA 
             MOVE.L     (SP)+,D2
             AND.L       #$00000FFF,D2
             CMP.W       #$000,D2
-            BEQ         GROUP2_IMMADDR_DOT_W
+            BEQ         GROUP2_IMMADDR_DOT_W        ; ABSOLUTE .W
             CMP.W       #$001,D2
-            BEQ         GROUP2_IMMADDR_DOT_L
+            BEQ         GROUP2_IMMADDR_DOT_L        ; ABSOLUTE .L
             CMP.W       #$100,D2
-            BEQ         GROUP2_IMMADDR_DATA
+            BEQ         GROUP2_IMMADDR_DATA         ; IMMEDIATE DATA
 
             BRA         BAD_OPCODE
 
-GROUP2_IMMADDR_DATA
+GROUP2_IMMADDR_DATA                                 ; SUBROUTINE FOR GROUP2 IMMEDIATE DATA
             ADD.L       #2,D5
-            MOVE.W      (A4),D2
-            JSR         PRINT_HASH
-            JSR         PRINT_DOLLAR
-            MOVE.W      (A4)+,D2
-            MOVE.W      (A4),D3
-            JSR         L_HEXTOASCII
+            MOVE.W      (A4),D2                     ; LOAD UNDECODED 4 BITS HEX  
+            JSR         PRINT_HASH                  ; PRINT #
+            JSR         PRINT_DOLLAR                ; PRINT $
+            MOVE.W      (A4)+,D2                    ; SKIP  THE FIRST 4 BITS
+            MOVE.W      (A4),D3                     ; GET THE NEXT 4 BIT
+            JSR         L_HEXTOASCII                ; SUBROUTINE APPENDING IMMEDIATE DATA TO OUTPUT A6
             JSR         ADDRWORDLOOP
             JSR         PRINT_COMM
-            BRA         EASTUFF2_FINISH
+            BRA         EASTUFF2_FINISH             ; FINSIH
 
 GROUP2_IMMADDR_DOT_L
             MOVE.B      #' ',(A6)+
@@ -1192,11 +1109,11 @@ GROUP2_IMMADDR_DOT_L
             ADD.L       #$4,D5
             MOVE.W      (A4)+,D2
             CLR         D2
-
+            ; SUBROUTINE APPENDING IMMEDIATE DATA TO OUTPUT A6
             MOVE.L      (A4),D3
             JSR         L_HEXTOASCII
             JSR         ADDRFLOOP
-
+            
             JSR         PRINT_COMM
             BRA         EASTUFF2_FINISH
 
@@ -1208,7 +1125,7 @@ GROUP2_IMMADDR_DOT_W
 
             MOVE.W      (A4)+,D2
             CLR         D2
-
+            ; SUBROUTINE APPENDING IMMEDIATE DATA TO OUTPUT A6
             MOVE.W      (A4),D3
             JSR         L_HEXTOASCII
             JSR         ADDRWORDLOOP
@@ -1217,7 +1134,7 @@ GROUP2_IMMADDR_DOT_W
             BRA         EASTUFF2_FINISH
 
 
-GROUP2_SRC_Dn
+GROUP2_SRC_Dn                           ;  DATA REGITER AS SOURCE FOR GROUP 2
             JSR         PRINT_D
             CLR         D2
             MOVE.W      D0,D2
@@ -1225,7 +1142,7 @@ GROUP2_SRC_Dn
             JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    D0,
             BRA         GROUP2_DEST_EA   ; GO TO DESTINATION DECODING
 
-GROUP2_SRC_An_VAL
+GROUP2_SRC_An_VAL                       ; DIRECT ADDRESSING AS SOURCE FOR GROUP2
             JSR         PRINT_A
             CLR         D2
             MOVE.W      D0,D2
@@ -1233,37 +1150,38 @@ GROUP2_SRC_An_VAL
             JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    (A0),
             BRA         GROUP2_DEST_EA       ; GO TO DESTINATION DECODING
 
-GROUP2_SRC_An      JSR         PRINT_OPENPAR
-            JSR         PRINT_A
-            CLR         D2
-            MOVE.W      D0,D2
-            JSR         GET_GROUP1_SRC_REG
-            JSR         PRINT_CLOSEPAR
-            JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    (A0),
-            BRA         GROUP2_DEST_EA       ; GO TO DESTINATION DECODING
-GROUP2_SRC_An_PLUS
+GROUP2_SRC_An                           ; INDIRECT ADDRESSING AS SOURCE FOR GROUP2
             JSR         PRINT_OPENPAR
             JSR         PRINT_A
             CLR         D2
             MOVE.W      D0,D2
-            JSR         GET_GROUP1_SRC_REG
+            JSR         GET_GROUP1_SRC_REG  ; GET REGISTER FOR (An)
+            JSR         PRINT_CLOSEPAR
+            JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    (A0),
+            BRA         GROUP2_DEST_EA       ; GO TO DESTINATION DECODING
+GROUP2_SRC_An_PLUS                      ; POSINCREMENT (An)+
+            JSR         PRINT_OPENPAR
+            JSR         PRINT_A
+            CLR         D2
+            MOVE.W      D0,D2
+            JSR         GET_GROUP1_SRC_REG  ; GET REGISTER FOR (An)+
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_PLUS
             JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L    (A0)+,
             BRA         GROUP2_DEST_EA       ; GO TO DESTINATION DECODING
-GROUP2_SRC_MINUS_An
+GROUP2_SRC_MINUS_An                     ; PREDECREMENT AS SOURCE FOR GROUP2
             JSR         PRINT_MINUS
             JSR         PRINT_OPENPAR
             JSR         PRINT_A
             CLR         D2
             MOVE.W      D0,D2
-            JSR         GET_GROUP1_SRC_REG
+            JSR         GET_GROUP1_SRC_REG  ; PRINT REGISTER FOR -(An)
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L   -(An),
             BRA         GROUP2_DEST_EA      ; GO TO DESTINATION DECODING
 
 
-GROUP2_DEST_EA
+GROUP2_DEST_EA                          ; GENERAL SUBROUTINE HANDLING EA FOR DESTINATION OF GROUP2
             CLR         D2
             MOVE.W      D0,D2
 
@@ -1273,37 +1191,37 @@ GROUP2_DEST_EA
             AND.L       #$000FFF00,D2   ; RESERVE BIT 6-8
             LSR.L       #8,D2           ; ELIMINATE BIT 4 5
             CMP.L       #$00000000,D2
-            BEQ         GROUP2_DEST_Dn
+            BEQ         GROUP2_DEST_Dn  ;  DATA ADDR
             CMP.L       #$00000010,D2
-            BEQ         GROUP2_DEST_An
+            BEQ         GROUP2_DEST_An  ; INDIRECT ADDR
             CMP.L       #$00000011,D2
-            BEQ         GROUP2_DEST_An_PLUS
+            BEQ         GROUP2_DEST_An_PLUS ; POSRINCREMENT
             CMP.L       #$00000100,D2
-            BEQ         GROUP2_DEST_MINUS_An
-            BRA         BAD_OPCODE
+            BEQ         GROUP2_DEST_MINUS_An    ; PREDECREMENT
+            BRA         BAD_OPCODE          ; OTHERWISE, BAD OPCODE. PRINT DATA, RETURN BACK TO THE LOOP
+    
 
-
-GROUP2_DEST_Dn
+GROUP2_DEST_Dn                              ; SUBROUTINE HANDLING DATA REGISTER AS DESTINATION OF GROUP2
             CLR         D2
             MOVE.W      D0,D2
             MOVE.L      D2,D0
             JSR         PRINT_D
             MOVE.L      D0,D2
             JSR         GET_GROUP1_DEST_REG
-            BRA         FINISH_GROUP2
+            BRA         FINISH_GROUP2       ;  BRANCH TO END OF GROUP2
 
-GROUP2_DEST_An
+GROUP2_DEST_An                              ; SUBROUTINE HANDLING INDIRECT ADDR AS DESTINATION OF GROUP2
             CLR         D2
-            MOVE.W      D0,D2
+            MOVE.W      D0,D2               ; GET ORIGINAL UNDECODED 4BITS IN HEX
             MOVE.L      D2,D0
-            JSR         PRINT_OPENPAR
-            JSR         PRINT_A
+            JSR         PRINT_OPENPAR       ; PRINT (
+            JSR         PRINT_A             ; PRINT  A ==> (A
             MOVE.L      D0,D2
-            JSR         GET_GROUP1_DEST_REG
-            JSR         PRINT_CLOSEPAR
-            BRA         FINISH_GROUP2
+            JSR         GET_GROUP1_DEST_REG ; GET  REGISTER FOR (An) ==> I.E: (A1
+            JSR         PRINT_CLOSEPAR      ; PRINT ) ==> (A1)
+            BRA         FINISH_GROUP2       ; BRANCH TO END OF GROUP2
 
-GROUP2_DEST_An_PLUS
+GROUP2_DEST_An_PLUS                         ; SUBROUTINE HANDLING POST-INCREMENT AS DESTINATION OF GROUP2                
             CLR         D2
             MOVE.W      D0,D2
             MOVE.L      D2,D0
@@ -1313,9 +1231,9 @@ GROUP2_DEST_An_PLUS
             JSR         GET_GROUP1_DEST_REG
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_PLUS
-            BRA         FINISH_GROUP2
+            BRA         FINISH_GROUP2       ;  BRANCH TO END OF GROUP2
 
-GROUP2_DEST_MINUS_An
+GROUP2_DEST_MINUS_An                        ; SUBROUTINE HANDLING PRE-DECREMENT AS DESTINATION OF GROUP2
             CLR         D2
             MOVE.W      D0,D2
             MOVE.L      D2,D0
@@ -1325,14 +1243,14 @@ GROUP2_DEST_MINUS_An
             MOVE.L      D0,D2
             JSR         GET_GROUP1_DEST_REG
             JSR         PRINT_CLOSEPAR
-            BRA         FINISH_GROUP2
+            BRA         FINISH_GROUP2       ; BRANCH TO END OF GROUP2
 
 
 
 
 ;;;;;===============
 
-DIRECTREGISTER
+DIRECTREGISTER          
             MOVEM.L     (SP)+,D2        ; LOAD BINARY BITS BACK INTO D2
             AND.L       #$00000111,D2   ; MASK EVERYTHING EXCEPT LAST THREE BITS FOR REGISTER
 
@@ -1389,7 +1307,8 @@ ADDRESSREGPRE
             RTS
 
 
-SETSIZE
+SETSIZE     ; HELPER SUBROUTINE SIMILAR TO PRINT_B, PRINT_W, PRINT_L TO PRINT OUT SIZE OF OPCODE.
+            ; HOWEVER, THEY HAVE DIRRENT EXITING INSTRUCTION TO DIFFRENT SUBROUTINES. 
             CMP.L       #$00000000,D2
             BEQ         SETSIZEBYTE
             CMP.L       #$00000001,D2
@@ -1503,16 +1422,7 @@ PRINTBADINSTR
              MOVE.L      D0,D2
              JMP         INVALID_OPCODE
             ; FULL UNDECIPHERED INSTRUCTION IS NOW INSIDE D2
-            ; PRINT OUT ERROR MESSAGE, FOLLOWED BY:
-            ; ADDROFDATA    DATA    $0000XXXX
-            ; NOTES:
-            ; - ADDROFDATA IS THE ADDRESS IN LOADED CODE WHERE THE INSTRUCTION WAS HELD
-            ; - DATA IS JUST A KEYWORD AND DOESN'T CHANGE
-            ; - $0000XXXX IS LITERALLY WHAT'S INSIDE D2, JUST NEED TO PRINT OUT ADDRESS
-            ; AFTER ALL OF THIS IS DONE, YOU HAVE PRINTED OUT THE MESSAGE AND YOUR STACK
-            ; IS EMPTY. YOU WANT TO CLEAN ANY REGISTERS LEFT TO CLEAN AND THEN JUMP BACK TO ADDRESSLOOP
-            ; TO READ NEXT INSTRUCTION
-            ; JMP       CLEANREGISTERS
+            ; PRINT OUT ERROR MESSAGE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1521,7 +1431,7 @@ PRINTBADINSTR
 ; THESE OPCODES INCLUDE: MOVE
 ;
 GROUP1OPCODE
-            ; CHECK FOR An AS DESTINATION
+            ; CATCH MOVEA ==> CHECK FOR An AS DESTINATION
             MOVE.W      (A4),D2
             AND.L       #$00000FF0,D2
             LSR.L       #4,D2
@@ -1531,21 +1441,22 @@ GROUP1OPCODE
             BEQ         BAD_OPCODE
             CMP.L       #$00010100,D2
             BEQ         BAD_OPCODE
-            CMP.L       #$00011000,D2
+            CMP.L       #$00011000,D2   ; CHECK DESTINATION OPMODE
             BEQ         BAD_OPCODE
                         
             CLR.L       D2
-            ; CHECK FOR An AS SOURCE
+            ; CATCH MOVEA ==> CHECK FOR An AS SOURCE
             MOVE.W      (A4),D2
             AND.L       #$000000FF,D2
-            JSR         CONVERT2BINARY
+            JSR         CONVERT2BINARY   
             AND.L       #$00FFF000,D2
-            CMP.L       #$00001000,D2
+            CMP.L       #$00001000,D2   ; CHECK SOURCE OPMODE
             BEQ         BAD_OPCODE      ; MOVEA
             
             JSR         PRINT_MOVE      ;
-
+            CLR.L       D2
             MOVE.W      (A4),D2
+            CLR.L       D0
             MOVE.L      D2,D0
             ; FOLLOWING LINE CHECK FOR SIZE OF MOVE
             LSR.L       #8,D2           ; 1234 ==> 0012
@@ -1553,7 +1464,8 @@ GROUP1OPCODE
             JSR         CONVERT2BINARY
             AND.L       #$000000FF,D2   ; CHECK THE  LAST 2 BINARY BIT
             CMP.L       #$00000001,D2
-            BEQ         GROUP1_DOTB
+            ; FOLLOWING LINES HANDLING SIZE AND CALL GROUP1_SRC_EA TO DECODE SOURCE'S EA
+            BEQ         GROUP1_DOTB     
             CMP.L       #$00000011,D2
             BEQ         GROUP1_DOTW
             CMP.L       #$00000010,D2
@@ -1577,7 +1489,7 @@ GROUP1_DOTL JSR         PRINT_DOT_L
             MOVE.B      #TAB,(A6)+
             BRA         GROUP1_SRC_EA
             ; FOLLOWING LINE DECODE SOURCE EA
-GROUP1_SRC_EA
+GROUP1_SRC_EA                           ; GENERAL SUBROUTINE HANDLING EA AS SOURCE OF GROUP1
             CLR         D2
             MOVE.W      D0,D2
             AND.L       #$000000FF,D2   ; GET THE LAST 2 HEX  BITS
@@ -1586,20 +1498,21 @@ GROUP1_SRC_EA
             LSR.L       #8,D2           ; ELIMINATE BIT 0-1
             LSR.L       #4,D2           ; ELIMATE BIT 2
             CMP.L       #$00000000,D2   ;
-            BEQ         SRC_Dn
+            BEQ         SRC_Dn          ; DATA ADDR
             CMP.L       #$00000001,D2
-            BEQ         SRC_An_VAL
+            BEQ         SRC_An_VAL      ; DIRECT ADDR
             CMP.L       #$00000010,D2
-            BEQ         SRC_An
+            BEQ         SRC_An          ; INDIRECT ADDR 
             CMP.L       #$00000011,D2
-            BEQ         SRC_An_PLUS
+            BEQ         SRC_An_PLUS     ; POST_INCREMENT
             CMP.L       #$00000100,D2
-            BEQ         SRC_MINUS_An
+            BEQ         SRC_MINUS_An    ; PRE-DECREMENT
             CMP.L       #$00000111,D2
-            BEQ         GROUP1_SRC_IMMADDR
-            BRA         BAD_OPCODE
+            BEQ         GROUP1_SRC_IMMADDR  ; IMMDEDIATE ADDR
+            BRA         BAD_OPCODE          ; OTHERWISE, BAD OPCODE
 
-GROUP1_SRC_IMMADDR
+GROUP1_SRC_IMMADDR                          ; GENERAL SUBROUTINE HANDLING ABSOLUTE .W .L AND IMMEDIATE DATA AS SOURCE FOR GROUP 1
+            
             MOVE.W      D0,D2
             AND.L       #$0000000F,D2
             JSR         CONVERT2BINARY
@@ -1661,38 +1574,41 @@ SRC_IMMADDR_DATAL
             MOVE.L      D0,D2
             BRA         GROUP1_DEST_EA
 
-SRC_IMMADDR_DOT_L
-      
+SRC_IMMADDR_DOT_L                       ; ABSOLUTE ADDR .L AS SOURCE OF GROUP1
+            
             JSR         PRINT_DOLLAR
-            ADD.L       #$4,D5
-            MOVE.W      (A4)+,D2
+            ADD.L       #$4,D5          ; UPDATE POINTER. D5 STORE CURRENT ADDR IN HEX
+            MOVE.W      (A4)+,D2        ; SKIP THE FIRST 4 BITS OF INSTRUCTION
             CLR         D2
 
-            MOVE.L      (A4),D3
+            MOVE.L      (A4),D3         ; GET THE NEXT 8 BITS OF THE ABSOLUTE ADDR
+            ; L_HEXTOASCII CONVERT HEX TO ASCII. TAKING D3 AS INPUT
+            ; APPENDING LONG ADDR TO OUTPUT A6 
             JSR         L_HEXTOASCII
             JSR         ADDRFLOOP
 
       
             JSR         PRINT_COMM
-            BRA         GROUP1_DEST_EA
+            BRA         GROUP1_DEST_EA  ; CONTINUE DECODING DESTINATION
 
-SRC_IMMADDR_DOT_W
-            ADD.L       #$2,D5
+SRC_IMMADDR_DOT_W                       ; ABSOLUTE ADDR .L AS SOURCE OF GROUP1
+            ADD.L       #$2,D5          ; UPDATE POINTER. D5 STORE CURRENT ADDR IN HEX
            
-            JSR         PRINT_DOLLAR
-
+            JSR         PRINT_DOLLAR    ; SKIP THE FIRST 4 BITS OF INSTRUCTION
+    
             MOVE.W      (A4)+,D2
             CLR         D2
-
+            ; L_HEXTOASCII CONVERT HEX TO ASCII. TAKING D3 AS INPUT
+            ; APPENDING LONG ADDR TO OUTPUT A6 
             MOVE.W      (A4),D3
             JSR         L_HEXTOASCII
             JSR         ADDRWORDLOOP
 
         
             JSR         PRINT_COMM
-            BRA         GROUP1_DEST_EA
+            BRA         GROUP1_DEST_EA  ; CONTINUE DECODING DESTINATION
 
-SRC_Dn      JSR         PRINT_D
+SRC_Dn      JSR         PRINT_D         ; DATA REGISTER AS SOURCE 
             CLR         D2
             MOVE.W      D0,D2
             JSR         GET_GROUP1_SRC_REG
@@ -1735,9 +1651,36 @@ SRC_MINUS_An
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_COMM      ; PRINT COMMA IE. MOVE.L   -(An),
             BRA         GROUP1_DEST_EA      ; GO TO DESTINATION DECODING
+SHIFTWORD                                   ; MOVING POINTER TO CORRECT POSITION 
+                                            ; BEFORE READING FOR DESTINATION 
+                                            ; DEPENDING ONSOURCE IS ALSO ABSOLUTE .L .W OR IMMEDIATE DATA 
+            MOVE.W     (A4)+,D2
+            BRA         GROUP1_DESTEA_NEXT
+SHIFTLONG                                   ; MOVING POINTER TO CORRECT POSITION 
+                                            ; BEFORE READING FOR DESTINATION 
+                                            ; DEPENDING ON SOURCE IS ALSO ABSOLUTE .L .W OR IMMEDIATE DATA 
+
+            MOVE.L      (A4)+,D2
+            BRA         GROUP1_DESTEA_NEXT
+SHIFT_IMMDATA                               ; ; MOVING POINTER TO CORRECT POSITION 
+                                            ; BEFORE READING FOR DESTINATION DEPENDING ON
+                                            ; SOURCE IS ALSO ABSOLUTE .L .W OR IMMEDIATE DATA 
+            CLR.L       D2
+            MOVE.W      D0,D2
+            JSR         CONVERT2BINARY
+            AND.L       #$000000FF,D2
+            CMP.L       #$00000001,D2
+            BEQ         SHIFTWORD           ; SKIP 4 BITS
+            CMP.L       #$00000011,D2
+            BEQ         SHIFTWORD           ; SKIP 4  BITS
+            CMP.L       #$00000010,D2
+            BEQ         SHIFTLONG           ; SKIP 8 BITS
 
 
-GROUP1_DEST_EA
+            
+
+GROUP1_DEST_EA                              ; GENERAL SUBROUTINE HANDLING EA AS DESTINATION OF GROUP1
+
             CLR         D2
             MOVE.W      D0,D2
 
@@ -1754,7 +1697,84 @@ GROUP1_DEST_EA
             BEQ         DEST_An_PLUS
             CMP.L       #$00000100,D2
             BEQ         DEST_MINUS_An
+            CMP.L       #$00000111,D2
+            BEQ         DEST_IMMADDR
+            
+DEST_IMMADDR_DOT_L
+      
+            JSR         PRINT_DOLLAR
+            ADD.L       #$4,D5
+            MOVE.W      (A4),D2
+            CLR         D2
 
+            MOVE.L      (A4),D3
+            JSR         L_HEXTOASCII
+            JSR         ADDRFLOOP
+            BRA         FINISH_GROUP1
+            
+DEST_IMMADDR_DOT_W
+            ADD.L       #$2,D5
+           
+            JSR         PRINT_DOLLAR
+
+            MOVE.W      (A4),D2
+                
+            CLR         D2
+
+            MOVE.W      (A4),D3
+            JSR         L_HEXTOASCII
+            JSR         ADDRWORDLOOP
+        
+            BRA         FINISH_GROUP1
+SHIFTIMMDATA
+            CLR.L       D2
+            MOVE.L      D0,D2
+            LSR.L       #8,D2
+            LSR.L       #4,D2 
+            JSR         CONVERT2BINARY
+            AND.L       #$000000FF,D2
+            CMP.W       #$01,D2
+            BEQ         SHIFTWORD
+            CMP.W       #$11,D2
+            BEQ         SHIFTWORD
+            CMP.L       #$10,D2
+            BEQ         SHIFTLONG
+                       
+DEST_IMMADDR                            ; SUBROUTINE HANDLING ABSOULTE .W .L OR IMMEDIATE DATA
+            ; FIRST, CHECK IF SOURCE IS ALSO .L .W OR IMMEDIATE DATA
+            ; THAT CASE WE HAVE TO MOVE THE CURRENT POINTER TO CORRECT POSITION BEFORE READING 
+            MOVE.L      D0,D2
+            AND.L       #$000000FF,D2
+            JSR         CONVERT2BINARY
+            AND.L       #$00FFF000,D2
+            CMP.L       #$00111000,D2
+            BNE         GROUP1_DESTEA_NEXT  ; IF SOURCE IS NOT .W .L NOR IMMEDIATE, THEN SKIP MOVING POINTER
+            CLR.L       D2
+            MOVE.W      D0,D2
+            AND.L       #$0000000F,D2
+            JSR         CONVERT2BINARY
+            AND.L       #$00000FFF,D2
+            CMP.W       #$000,D2
+            BEQ         SHIFTWORD       
+            CMP.W       #$001,D2
+            BEQ         SHIFTLONG
+            CMP.W       #$100,D2
+            BEQ         SHIFTIMMDATA
+
+                        
+GROUP1_DESTEA_NEXT
+            CLR.L       D2
+            MOVE.L      D0,D2
+            AND.L       #$00000F00,D2
+            LSR.L       #8,D2
+            JSR         CONVERT2BINARY
+            LSR.L       #4,D2
+            CMP.W       #$000,D2
+            BEQ         DEST_IMMADDR_DOT_W   
+            CMP.W       #$001,D2
+            BEQ         DEST_IMMADDR_DOT_L  
+            BRA         BAD_OPCODE 
+            
 
 DEST_Dn     CLR         D2
             MOVE.W      D0,D2
@@ -1822,7 +1842,7 @@ GET_GROUP1_SRC_REG
             BEQ         PRINT_7
             RTS
 
-GET_GROUP1_DEST_REG
+GET_GROUP1_DEST_REG                      ; SUBROUTINE GET REGISTER FOR GROUP1
             AND.L       #$00000F00,D2   ; RESERVE 2nd HEX BIT
             LSR.L       #8,D2           ; ELIMINATE THE LAST 2 BITS
             JSR         CONVERT2BINARY
@@ -2094,7 +2114,7 @@ MOVEMCODE_MEM2REG
             CMP.L       #$00000100,D2   ; SIZE = LONG
             BEQ         MEM2REG_MOVEMLONGSIZE
 
-MOVEM_MEM2REG_FIRSTPART
+MOVEM_MEM2REG_FIRSTPART             ; EA --> Dn. SUBROUTINE DECODE SOURCE FOR EA --> Dn
             ADD.L       #2,D5
             MOVE.B      #TAB,(A6)+
             MOVE.B      #' ',(A6)+
@@ -2110,8 +2130,8 @@ MOVEM_MEM2REG_FIRSTPART
             BEQ         MOVEM_MEM2REG_EA
             BRA         BAD_OPCODE
 
-MOVEM_MEM2REG_SECONDPART
-            JSR         PRINT_COMM
+MOVEM_MEM2REG_SECONDPART                ; EA --> Dn. SUBROUTINE DECODE SOURCE FOR EA --> Dn         
+            JSR         PRINT_COMM      ; PRINT COMMA AS SEPARATOR
             MOVE.W      (A4)+,D2        ; MOVE POINTER TO BEGINNING OF UNDECODED 4BIT HEX
             MOVE.W      (A4),D2
             BRA         MEM2REG_DETERMINEREGS
@@ -2119,11 +2139,11 @@ MOVEM_MEM2REG_SECONDPART
             ; TODO: DECODE SECOND PART AFTER COMMA
 
 MOVEM_MEM2REG_FINISH
-            CLR.L       D2
-            MOVE.B      -(A6),D2
-            BRA         GOOD_OPCODE
+            CLR.L       D2              
+            MOVE.B      -(A6),D2         ; REMOVE REDUNDANT '/'
+            BRA         GOOD_OPCODE      ; PRINTING THINGS OUT AND BACK TO THE LOOP
 
-MOVEM_MEM2REG_An
+MOVEM_MEM2REG_An                        ; INDIRECT ADDR FOR MOVEM <ea> -> Dn
             JSR         PRINT_OPENPAR
             JSR         PRINT_A
             MOVE.L      D0,D2
@@ -2132,8 +2152,8 @@ MOVEM_MEM2REG_An
             AND.L       #$00000FFF,D2
             JSR         MEM_GETREGISTER
             JSR         PRINT_CLOSEPAR
-            BRA         MOVEM_MEM2REG_SECONDPART
-MOVEM_MEM2REG_An_PLUS
+            BRA         MOVEM_MEM2REG_SECONDPART    ; NEXT, DECODE THE DESTINATION FOR EA->Dn
+MOVEM_MEM2REG_An_PLUS                               ; DIRECT ADDR FOR MOVEM <ea> -> Dn
             JSR         PRINT_OPENPAR
             JSR         PRINT_A
             MOVE.L      D0,D2
@@ -2143,7 +2163,7 @@ MOVEM_MEM2REG_An_PLUS
             JSR         MEM_GETREGISTER
             JSR         PRINT_CLOSEPAR
             JSR         PRINT_PLUS
-            BRA         MOVEM_MEM2REG_SECONDPART
+            BRA         MOVEM_MEM2REG_SECONDPART    ; NEXT, DECODE THE DESTINATION FOR EA->Dn
 
 MOVEM_MEM2REG_EA
             ;  FOLLOWING LINES CHECK FOR REGISTER TO DETERMINE .W OR .L
@@ -2184,8 +2204,8 @@ MOVEM_MEM2REG_DOT_L
 
 
 
-MEM2REG_DETERMINEREGS
-            ; WHICH An REGISTERS
+MEM2REG_DETERMINEREGS                       ; DETERMINE REGISTER FOR MOVEM
+            ; WHICH An REGISTERS        
             CMP.L       #$00008000,D2
             BGE         MOVEM_MEM2REG_A7
             CMP.L       #$00004000,D2
@@ -2221,17 +2241,19 @@ MEM2REG_DETERMINEREGS
             CMP.L       #$00000001,D2
             BGE         MOVEM_MEM2REG_D0
 
-            ; SAFETY CHECK
+            ; SAFETY CHECK FOR INVALID EA
             CMP.W       #$0000,D2
             BNE         BAD_OPCODE
 
             BRA         MOVEM_MEM2REG_FINISH    ; RETURN BACK TO THE  END OF MEM2REG LOOP
+            ;FOLLOWING SUBROUTINES HELP TO INDENTIFY THE ADDRESS RANGE A0-A7, AND DATA REGISTER RANGE D0-D7
+            ; BASED ON GIVEN 4-BIT HEX VALUE
 MOVEM_MEM2REG_A7
             SUB.W       #$8000,D2
             MOVE.B      #'A',(A6)+
             MOVE.B      #'7',(A6)+
             MOVE.B      #'/',(A6)+
-            BRA         MEM2REG_DETERMINEREGS
+            BRA         MEM2REG_DETERMINEREGS    ; CONTINUE UNTIL '0000'. CANNOT DECODE ANYMORE
 MOVEM_MEM2REG_A6
             SUB.W       #$4000,D2
             MOVE.B      #'A',(A6)+
@@ -2303,7 +2325,7 @@ MOVEM_MEM2REG_D3
             MOVE.B      #'D',(A6)+
             MOVE.B      #'3',(A6)+
             MOVE.B      #'/',(A6)+
-            BRA         MEM2REG_DETERMINEREGS
+            BRA         MEM2REG_DETERMINEREGS   
 MOVEM_MEM2REG_D2
             SUB.W       #$0004,D2
             MOVE.B      #'D',(A6)+
@@ -2409,7 +2431,7 @@ REG2MEM_FINISH
 MOVEMWORDSIZE
             MOVE.B      #'.',(A6)+
             MOVE.B      #'W',(A6)+
-            MOVE.B      #' ',(A6)+
+            MOVE.B      #' ',(A6)+      ; SPACE FILLER FOR BETTER PERFORMANCE
             BRA         MOVEMR2M1
 
 MOVEMLONGSIZE
@@ -2754,18 +2776,19 @@ MOVEM_REG2MEM_DOT_L
             JSR         ADDRFLOOP
             BRA         REG2MEM_FINISH
 
-MOVEMEA
+MOVEMEA                                     ; GENERAL SUBROUTINE HANDLING EA AS DESTINATION FOR MOVEM    
             JSR         PRINT_DOLLAR
             MOVE.W      D0,D2
             AND.L       #$0000000F,D2
             JSR         CONVERT2BINARY
             AND.L       #$00000FFF,D2
             CMP.W       #$000,D2
-            BEQ         MOVEM_REG2MEM_DOT_W
+            BEQ         MOVEM_REG2MEM_DOT_W ; HANDLING ABSOLUTE ADDR .W AS DESTINATION FOR MOVEM
             CMP.W       #$001,D2
-            BEQ         MOVEM_REG2MEM_DOT_L
-            BRA         BAD_OPCODE
-MOVEM_REG2MEM_MINUS_An
+            BEQ         MOVEM_REG2MEM_DOT_L ; HANDLING ABSOLUTE ADDR .W AS DESTINATION FOR MOVEM
+            BRA         BAD_OPCODE          ; OTHERWISE, BAD OPCODE (UNSUPPORTED EA MODE) OR 
+                                            ; TRANSITION TO UNSUPPORTED OPCODE (ie. MOVEA)
+MOVEM_REG2MEM_MINUS_An                      
             JSR         PRINT_MINUS
             BRA         MOVEMANINDIRECT
 MOVEMANINDIRECT
@@ -2856,8 +2879,8 @@ GROUP3OPCODE
             JMP         BAD_OPCODE      ; OTHER CASES ==> BAD OPCODE
 
 BRACODE
-            JSR         PRINT_BRA
-            MOVE.B      #' ',(A6)+
+            JSR         PRINT_BRA       ; PRINT OPCODE NAME 'BRA'
+            MOVE.B      #' ',(A6)+      ; SPACE FILLER FOR ALIGNMENT
             MOVE.B      #' ',(A6)+
             MOVEM.L     (SP)+,D2        ; POPS OFF FULL UNDECIPHERED INSTRUCTION INTO D2
             MOVE.L      D2,-(SP)        ; TEMPORARILY MOVES D2 INTO STACK
@@ -2930,12 +2953,14 @@ GROUP3_FINISH
 
 ; REVERSE THE TWO COMPLEMENT: INVERT BITS <== ADD 1
 DSPLMCONVERSION
-            MOVE.B      #'.',(A6)+
+            MOVE.B      #'.',(A6)+     ; SIZE FOR Bcc EXCEPT BRA
             MOVE.B      #'B',(A6)+
 
    
 
-DSPLMCONVERSION_BRA
+DSPLMCONVERSION_BRA                     ; SPECIAL STARTING POINT FOR BRA AS IT DOES NOT REQUIRE SIZE LIKE BGT, BLE, ...
+            ;FOLLOWING LINES CONVERT HEXVALUE TO DISPLACEMENT
+            ; DSPLMCONVERSION IS CALLED WHEN BRANCHING FROM HIGHER ADDR TO LOWER ADDR.
             MOVE.B      #TAB,(A6)+
             MOVE.B      #' ',(A6)+
             MOVE.B      #' ',(A6)+
@@ -2960,15 +2985,15 @@ RFLZ        JSR         REFILL_ZERO     ; PUSH ZERO TO REPLACE FFFF REMOVED. DIS
             JSR         L_HEXTOASCII    ; CONVERT ADDR TO STRING
             JSR         ADDRFLOOP
             BRA         GROUP3_FINISH
-ADDRFLOOP
+ADDRFLOOP                               ; SUBROUTINE PRINTING LONG ADDR TO A6. ie 00009000 ==> 00009000
             MOVE.B      (A2)+,(A6)+
             BNE.S       ADDRFLOOP
             SUBQ        #$1,A6
             RTS
-ADDRWORDLOOP ADDQ       #4, A2
+ADDRWORDLOOP ADDQ       #4, A2          ; SUBROUTINE PRINTING WORD ADDR TO A6. ie 00000009 ==> 0009
             BRA         ADDRFLOOP
             RTS
-ADDRBYTELOOP ADDQ       #6, A2
+ADDRBYTELOOP ADDQ       #6, A2          ; SUBROUTINE PRINTING BYTE ADDR TO A6. ie 00000009 ==> 09
             BRA         ADDRFLOOP
             RTS
 
@@ -2985,27 +3010,28 @@ Q_CLEARF
             MOVE.L      (SP)+,D2
             BRA         RFLZ
 
-REFILL_ZERO
+REFILL_ZERO                             ; ADD LEADING ZERO. 90 ==> 0000 0090 (IN LONG ADDR)
             LSR.L       #4,D2
             SUB.L       #1,D3
             CMP.L       #0,D3
             BNE         REFILL_ZERO
             RTS
 
-READ_4MOREBITS
+READ_4MOREBITS                          
+; SECOND CASE FOR GETTING DISPLACEMENT. WHEN BRANCHING FROM LOWER ADDR TO HIGHER ADDR.
             MOVE.B      #'.',(A6)+
             MOVE.B      #'W',(A6)+
 
 
 
-READ_4MOREBITS_BRA
+READ_4MOREBITS_BRA                      ; SPECIAL STARTING POINT FOR BRA AS IT DOES NOT REQUIRE  SIZE
             MOVE.B      #TAB,(A6)+
-            MOVE.B      #' ',(A6)+
+            MOVE.B      #' ',(A6)+      ; SPACE FILLER FOR ALIGNMENT 
             MOVE.B      #' ',(A6)+
             MOVE.B      #' ',(A6)+
             
             
-            JSR         PRINT_DOLLAR
+            JSR         PRINT_DOLLAR    
             
             MOVE.L      D5,-(SP)
             ADD.L       #$2,D5
@@ -3017,7 +3043,7 @@ READ_4MOREBITS_BRA
             JSR         L_HEXTOASCII    ; CONVERT ADDR TO STRING
             JSR         ADDRFLOOP
             CLR         D3
-            BRA         GROUP3_FINISH
+            BRA         GROUP3_FINISH   ;  BRANCH TO FINISH GROUP 3
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3112,7 +3138,7 @@ GROUP5OPCODE
             BEQ         BAD_OPCODE
 
 
-GROUP5_NXT
+GROUP5_NXT                              ; CONTINUE ON AFTER DECODING SIZE
             MOVE.B      #' ',(A6)+
             MOVE.B      #' ',(A6)+
             MOVE.B      #' ',(A6)+
@@ -3125,18 +3151,18 @@ GROUP5_NXT
             JSR         CONVERT2BINARY  ; CONVERT TO BINARY
             AND.L       #$000FFF00,D2
             LSR.L       #8,D2
-            CMP.L       #$011,D2
+            CMP.L       #$011,D2        ; CATCH MOVEM ==> BAD OPCODE
             BEQ         BAD_OPCODE
             CMP.W       #$111,D2
             BEQ         BAD_OPCODE
             AND.L       #$00000F00,D2
             LSR.L       #8,D2
             CMP.B       #$0,D2
-            BEQ         SUBEADN
+            BEQ         SUBEADN         ; DECODE MOVEM <EA> --> Dn
             CMP.B       #$1,D2
-            BEQ         SUBDNEA
+            BEQ         SUBDNEA         ; DECODE MOVEM Dn   --> <EA>
 
-SUBA
+SUBA                                    ; HANDLING SUBA
             MOVE.W      D0,D2
             AND.L       #$000000FF,D2
             JSR         CONVERT2BINARY
@@ -3181,7 +3207,7 @@ SUBEADN
             JSR         CONVERT2BINARY
             AND.L       #$00FFF000,D2
 
-            ; FOLLOWING LINES CHECK FOR EA MODE
+            ; FOLLOWING LINES CHECK FOR SOURCE EA MODE
             LSR.L       #8,D2
             LSR.L       #4,D2
             CMP.L       #$0000,D2
@@ -3201,20 +3227,20 @@ SUBEADN
             CMP.L       #$0110,D2
             BEQ         BAD_OPCODE
 
-SUBEADN_SECONDPART
+SUBEADN_SECONDPART                          ; DECODE DESTINATION OF SUB <EA> ==> Dn
             JSR         PRINT_COMM
-            JSR         GROUP56_Dn_PART
+            JSR         GROUP56_Dn_PART     ; DECODE Dn FOR SUB <EA> ==> Dn
 
             BRA         GROUP56_FINISH
 
 
-SUBDNEA
-            JSR         GROUP56_Dn_PART
+SUBDNEA                                     ; GENERAL SUBROUTINE HANDLING SUB Dn ==> <EA>
+            JSR         GROUP56_Dn_PART     ; DECODE Dn FOR SUB Dn ==> <EA>
 
             JSR         PRINT_COMM
 
             MOVE.W      D0,D2
-            AND.L       #$000000FF,D2
+            AND.L       #$000000FF,D2        ; CHECK FOR SOURCE OPMODE
             JSR         CONVERT2BINARY
             AND.L       #$00FFF000,D2
 
@@ -3244,7 +3270,7 @@ SUBDNEA
             CMP.L       #$0110,D2
             BEQ         BAD_OPCODE          ; NOT REQUIRED EA
 
-SUBDNEA_FINISH
+SUBDNEA_FINISH                              ; END OF SUBROUTINE FOR SUB
            BRA         GROUP56_FINISH
 
 GROUP56_FINISH
@@ -3253,7 +3279,8 @@ GROUP56_FINISH
 GROUP56_SUBA_IMMADDR
             JSR         GROUP56_IMMADDR
             BRA         SUBA_SECONDPART
-GROUP56_IMMADDR
+GROUP56_IMMADDR                                 ; GENERAL SUBROUTINE HANDLING ABSOLUTE .L .W AND IMMEDIATE DATA FOR GROUP 56
+                                                ; INCLUDING SUB + AND
             MOVE.W      D0,D2
             MOVE.L      D2,D0
             AND.L       #$0000000F,D2
@@ -3285,7 +3312,7 @@ GROUP6_IMMADDR_DATA
             BEQ         GROUP56_IMMADDR_DOT_L
             BEQ         BAD_OPCODE
 
-GROUP56_IMMADDR_DOT_W
+GROUP56_IMMADDR_DOT_W                   ; SUBROUTINE FOR ABSOLUTE WORD ADDR OF GROUP56
             ADD.L       #$2,D5
             MOVE.B      #' ',(A6)+
             JSR         PRINT_DOLLAR
@@ -3296,7 +3323,7 @@ GROUP56_IMMADDR_DOT_W
             JSR         ADDRWORDLOOP
     
             BRA         GROUP56_IMMADDR_FINISH
-GROUP56_IMMADDR_DOT_L
+GROUP56_IMMADDR_DOT_L                   ; SUBROUTINE FOR ABSOLUTE WORD ADDR OF GROUP56
             ADD.L       #$4,D5
             MOVE.B      #' ',(A6)+
             JSR         PRINT_DOLLAR
@@ -3313,23 +3340,24 @@ GROUP56_IMMADDR_DOT_L
 ;------
 
 GROUP56_SUBA_Dn
-            JSR         GROUP56_Dn
+            JSR         GROUP56_Dn          ; DECODE Dn AS SOURCE
             BRA         SUBA_SECONDPART
 
 GROUP56_SUBA_DIR_An
-            JSR         GROUP56_DIR_An
+            JSR         GROUP56_DIR_An      ; DECODE An AS SOURCE
             BRA         SUBA_SECONDPART
 GROUP56_SUBA_INDIR_An
-            JSR         GROUP56_INDIR_An
+            JSR         GROUP56_INDIR_An    ; DECODE (An) AS SOURCE
             BRA         SUBA_SECONDPART
 GROUP56_SUBA_An_PLUS
-            JSR         GROUP56_An_PLUS
+            JSR         GROUP56_An_PLUS     ; DECODE (An)+ AS SOURCE
             BRA         SUBA_SECONDPART
 GROUP56_SUBA_MINUS_An
-            JSR         GROUP56_MINUS_An
+            JSR         GROUP56_MINUS_An    ; DECODE -(An) AS SOURCE
             BRA         SUBA_SECONDPART
 
 ;------
+;FOLLOWING LINES ARE SUBROUTINE FOR TRANSITIONING TO DESTINATION DECODING AFTER SOURCE DECODING OF GROUP 56 <EA> ==> Dn
 GROUP56_EADN_Dn
             JSR         GROUP56_Dn
             BRA         SUBEADN_SECONDPART
@@ -3351,7 +3379,7 @@ GROUP56_EADN_IMMADDR
             BRA         SUBEADN_SECONDPART
 
 ;-------
-
+;FOLLOWING LINES ARE SUBROUTINE FOR TRANSITIONING TO DESTINATION DECODING AFTER SOURCE DECODING OF GROUP 56 Dn ==> <EA>
 GROUP56_DNEA_Dn
             JSR         GROUP56_Dn
             BRA         SUBDNEA_FINISH
@@ -3373,7 +3401,7 @@ GROUP56_DNEA_IMMADDR
             JSR         GROUP56_IMMADDR
             BRA         SUBDNEA_FINISH
 ;------
-
+; FOLLOWING SUBROUTINES HANDLE SPECIFIC ADDRESING MODE FOR GROUP56
 
 PRINT_DOT_B56
             JSR         PRINT_DOT_B
@@ -3749,7 +3777,7 @@ GROUP8OPCODE
 
             LSR.L       #4,D2           ; GET THE 3RD DIGIT. EX: GET 3 FROM E234 ==> E23 (AFTER SHIFT RIGHT)
             AND.L       #$0000000F,D2   ; GET THE LSB
-            JSR         CONVERT2BINARY8  ; IE: 3 = 0011
+            JSR         CONVERT2BINARY  ; IE: 3 = 0011
 
             LSR.L       #8,D2           ; CHECK BIT 6-7. SEE THE TABLE
             CMP.L       #$11,D2         ; COMPARE WITH 11
@@ -3758,7 +3786,7 @@ GROUP8OPCODE
             ;JSR         BAD_OPCODE      ;
 
 
-REGSHIFT
+REGSHIFT                                ; GENERAL SUBROUTINE HANDLING REGISTER SHIFT FOR BITH ASL AND LSL
             MOVE.W      (A4),D2
             AND.L       #$0000FFFF,D2
             ;MOVE.L      D2,-(SP)
@@ -3781,22 +3809,22 @@ REGSHIFT
             CMP.L       #$00,D2
             BEQ         REG_ASL
             BRA         BAD_OPCODE
-REG_LSL
+REG_LSL                                 ; SUBROUTINE HANDLING REGISTER SHIFT FOR LSL
             JSR         PRINT_LSL
-            JSR         REG_DECODE
-            BRA         GROUP8_FINISH
+            JSR         REG_DECODE      ; DECODE REGISTER
+            BRA         GROUP8_FINISH   ; FINISH GROUP 8
 
-REG_ASL
+REG_ASL                                 ; SUBROUTINE HANDLING REGISTER SHIFT FOR ASL
             JSR         PRINT_ASL
-            JSR         REG_DECODE
-            BRA         GROUP8_FINISH
+            JSR         REG_DECODE      ; DECODE REGISTER   
+            BRA         GROUP8_FINISH   ; FINISH GROUP 8
 
 
 
 GROUP8_FINISH
-            BRA         PRINTA6
+            BRA         PRINTA6         ; RETURN AS GOOD OPCODE
 
-REG_DECODE
+REG_DECODE                              ; GENERAL SUBROUTINE FOR REGISTER DECODING
             MOVE.W      (A4),D2
             AND.L       #$000000F0,D2
             LSR.L       #4,D2
@@ -3804,11 +3832,11 @@ REG_DECODE
             ;MOVE.L      D2,-(SP)
             LSR.L       #8,D2
             CMP.L       #$00,D2
-            BEQ         PRINT_DOT_B8
+            BEQ         PRINT_DOT_B8     ; SIZE .B 
             CMP.L       #$01,D2
-            BEQ         PRINT_DOT_W8
+            BEQ         PRINT_DOT_W8     ; SIZE .W
             CMP.L       #$10,D2
-            BEQ         PRINT_DOT_L8
+            BEQ         PRINT_DOT_L8     ; SIZE .L
 NEXT_1      
             MOVE.B      #' ',(A6)+
             MOVE.B      #' ',(A6)+
@@ -3816,16 +3844,18 @@ NEXT_1
             MOVE.B      #TAB,(A6)+
 
             MOVE.W      (A4),D2
-            AND.L       #$000000F0,D2
+            AND.L       #$000000F0,D2       ; CHECK THE 3RD  HEX BIT
             LSR.L       #4,D2
             JSR         CONVERT2BINARY
 
             ;MOVE.L      (SP)+,D2
-            AND.L       #$000000F0,D2
+            AND.L       #$000000F0,D2       ; 
             LSR.L       #4,D2
             CMP.L       #$00000000,D2          ; IMMEDIATE COUNT
             BEQ         PRINT_HASH8
             JSR         PRINT_D
+            ; FOLLLOWING LINES ARE CUSTOMIZED PRINT REGISTER FOR DATA REGISTER Dn OF GROUP 8.
+            ; PRINT_08 PRINT THE SAME THING AS PRINT_0 BUT THEY HAVE DIFFERENT EXITING POINT
 
 NEXT_3      MOVE.W      (A4),D2
             AND.L       #$00000F00,D2           ; GET THE 2nd DIGIT
@@ -3851,6 +3881,7 @@ NEXT_3      MOVE.W      (A4),D2
 
 
 NEXT_4      JSR         PRINT_COMM
+            ; FOLLOWING LINES DECODE REGISTER FOR Dn AS DESTINATION
             JSR         PRINT_D
 
             MOVE.W      (A4),D2
@@ -3875,10 +3906,10 @@ NEXT_4      JSR         PRINT_COMM
             BEQ         PRINT_7
 
 
-DONE8       RTS
+DONE8       RTS                     ; FINISH REGISTER DECODING
 
 
-MEMSHIFT
+MEMSHIFT                            ; GENERAL SUBROUTINE FOR MEMORY SHIFT OF ASL AND LSL
             CLR         D2
             MOVE.W      (A4),D2
             ; FOLLOWING LINES GET THE 2nd HEX DIGIT
@@ -3897,19 +3928,19 @@ MEMSHIFT
             MOVE.L      D7,D2
             LSR.L       #4,D2
             CMP.W       #$000,D2
-            BEQ         MEM_ASL
+            BEQ         MEM_ASL         ; ASL WITH MEMORY SHIFT
             CMP.W       #$001,D2
-            BEQ         MEM_LSL
-            BRA         BAD_OPCODE
+            BEQ         MEM_LSL         ; LSL WITH MEMORY SHIFT
+            BRA         BAD_OPCODE      ; OTHERWISE, BAD OPCODE
 MEM_ASL
             JSR         PRINT_ASL
-            JSR         PRINT_DOT_W
-            MOVE.B      #' ',(A6)+
+            JSR         PRINT_DOT_W     ; PRINT SIZE
+            MOVE.B      #' ',(A6)+      ; SPACE FILLER FOR ALIGNMENT
             MOVE.B      #' ',(A6)+
             MOVE.B      #' ',(A6)+
             
             MOVE.B      #TAB,(A6)+
-            BRA         MEM_EA
+            BRA         MEM_EA          ; DECODE SOURCE EA. BOTH ASL AND LSL SHARE THE SAME MEM_EA DECODING FOR SOURCE
 
 MEM_LSL
             JSR         PRINT_LSL
@@ -3919,7 +3950,8 @@ MEM_LSL
             MOVE.B      #' ',(A6)+
 
             MOVE.B      #TAB,(A6)+
-            BRA         MEM_EA
+            BRA         MEM_EA          ; DECODE SOURCE EA. BOTH ASL AND LSL SHARE THE SAME MEM_EA DECODING
+
 
 MEM_An
             JSR         PRINT_OPENPAR
@@ -3968,7 +4000,7 @@ MEM_IMMADDR_DOT_W
             AND.L       #$0000FFFF,D2
             CLR         D3
             MOVE.W      D2,D3
-            JSR         L_HEXTOASCII    ; CONVERT ADDR TO STRING
+            JSR         L_HEXTOASCII    ; CONVERT ADDR TO STRING AND APPENDING TO OUTPUT A6
             JSR         ADDRWORDLOOP
      
             BRA         GROUP8_FINISH
@@ -3979,12 +4011,12 @@ MEM_IMMADDR_DOT_L
          
             JSR         PRINT_DOLLAR
             MOVE.L      D2,D3
-            JSR         L_HEXTOASCII    ; CONVERT ADDR TO STRING
+            JSR         L_HEXTOASCII    ; CONVERT ADDR TO STRING AND APPENDING TO OUTPUT A6
             JSR         ADDRFLOOP
            
-            BRA         GROUP8_FINISH
+            BRA         GROUP8_FINISH   ; FINISH GROUP8
 
-MEM_EA:     MOVE.W      (A4),D2
+MEM_EA:     MOVE.W      (A4),D2         ; GENERAL SUBROUTINE FOR DECODING <EA> AS SOURCE OF ASL AND LSL MEMORY SHIFT
             AND.L       #$0000FF,D2
             JSR         CONVERT2BINARY
             MOVE.L      D2,D7
@@ -3992,15 +4024,15 @@ MEM_EA:     MOVE.W      (A4),D2
             LSR.L       #8,D2
             LSR.L       #4,D2
             CMP.W       #$010,D2
-            BEQ         MEM_An
+            BEQ         MEM_An          ; INDIRECT ADDR
             CMP.W       #$011,D2
-            BEQ         MEM_An_PLUS
+            BEQ         MEM_An_PLUS     ; POST-INCREMENT 
             CMP.W       #$100,D2
-            BEQ         MEM_MINUS_An
+            BEQ         MEM_MINUS_An    ; PRE-DECREMENT
             CMP.W       #$111,D2
-            BEQ         MEM_IMMADDR
+            BEQ         MEM_IMMADDR     ; ABSOLUTE ADDR .L .W AND IMMEDIATE DATA GROUP
             BRA         BAD_OPCODE      ; OTHER CASES ARE BAD
-MEM_GETREGISTER
+MEM_GETREGISTER                         ; HELPER FUNCTION TO FIGURE OUT REGISTER FOR GROUP8
             CMP.W       #$0000,D2
             BEQ         PRINT_0         ; EX MOVE.L D2 by this step
             CMP.W       #$0001,D2
@@ -4018,11 +4050,7 @@ MEM_GETREGISTER
             CMP.W       #$0111,D2
             BEQ         PRINT_7
             RTS
-
-
-CONVERT2BINARY8
-            JSR         CONVERT2BINARY
-            RTS
+; HELPER SUBROUTINE PRINTING NUMBERS FROM 0-9, SIZE '.B' --> '.L' AND SPECIAL CHARACTERS LIKE # $ ( ) ....
 PRINT_08
             MOVE.B      #'0',(A6)+
             BRA         NEXT_4
@@ -4286,7 +4314,7 @@ PRINT_DOLLAR MOVE.B      #'$',(A6)+
 *========= END OF SPECIAL CHARACTERS =========*
 
 
-            SIMHALT
+
 
 
 
@@ -4322,7 +4350,7 @@ INVALID_RANGE   DC.B        'ERROR! Ending address must be greater than or equal
 USERRESPONSE    DC.B    '',0
 NEWLINERESPONSE    DC.B    '',0
 LINES_ON_SCREEN DS.L    1
-
+EXIT_MESS       DC.B    'PROGRAM EXIT!',CR,LF,0
 
 TEAMNAME
             DC.B        ' |---------------------------- version '
@@ -4365,6 +4393,8 @@ TEAMNAME
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
+
 
 
 
