@@ -534,6 +534,7 @@ doswap      SWAP    D3
 *       2. Output's location is held by D3.
 *       3. Length of the hex value is held by D1. (Input's location + Length = location of the last bit)
 *
+
 ASCII2HEX:  LEA         (A1),A2         ; COPY INPUT ADDR TO A2
             JSR         RmLeadZero
             JSR         A2HLOOP         ; START THE LOOP THAT CONVERT EACH STRING CHAR TO HEX
@@ -553,7 +554,11 @@ A2HLOOP     CLR         D2
             BEQ         EXIT_A2HL       ; $00 END OF STRING. BRANCH TO DISPLAYING RESULT
             CMP.B       #$FF,D2
             BEQ         EXIT_A2HL       ; $FF END OF STRING. BRANCH TO DISPLAYING RESULT
+            CMP.B       #$61,D2
+            BLT         A2HLOOPNEXT
+            SUBI.B      #$20,D2
 
+A2HLOOPNEXT
             CMP.B       #$30,D2         ; CHARACTER NOT IN [1..9] AND [A,Z]
             BLT         A2H_ERR         ; less than $30 ('0') ==> invalid
             CMP.B       #$46,D2         ; CHARACTER NOT IN [1..9] AND [A,Z]
@@ -4393,6 +4398,7 @@ TEAMNAME
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
