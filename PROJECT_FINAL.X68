@@ -25,12 +25,7 @@ START       ORG         $1000
          
 
 * ================= WELCOME SCREEN PROMPT ================= *
-WELC        
-            LEA         TEAMNAME,A1     ; DISPLAY TEAM NAME
-            MOVE.B      #14,D0
-            TRAP        #15 
-
-            
+WELC                  
             MOVE.B      #1, LINES_ON_SCREEN ; START COUNTING LINES ON SCREEN
             LEA         WELCOME,A1      ; LOAD WELCOME PROMPT
             MOVE.B      #14,D0          ; USING TRAP TASK #14
@@ -52,6 +47,7 @@ STORESTARTADD
             CMP.B       #$8,D1          ; STORE STARTING ADDRESS
             BLE         STORESTARTADD_1
 
+STRTADDR_OVERFLOW
             ADD.B       #1, LINES_ON_SCREEN
             LEA         TOOLONGADDR,A1          ; INVALID ADDR. TOO LONG
             MOVE.B      #13,D0
@@ -63,7 +59,8 @@ STORESTARTADD_1
             ; VERIFY THAT FIRST 4 DIGITS ARE O'S
             ; TEMPORARILY STORE THE ADDRESS TO D2
             MOVE.L      D3, D2
-
+            CMP.L       #$00FFFFFF,D2
+            BGT         STRTADDR_OVERFLOW    ; CATCH ADDRESS GREATER THAN FFFFFF
             ; REJECT ANYTHING OVER $00FFFFFF
             ; NEED TO ENSURE THAT FIRST 2 DIGITS ARE 0'S
 
@@ -146,9 +143,10 @@ EADDR       ADD.B       #1, LINES_ON_SCREEN
             ; TODO: ERROR HANDLING/INPUT VALIDATION
 
 STOREENDADD
-            CMP.B       #$8,D1          ; VALIDATES THAT ADDRESS PROVIDED IS UNDER 8 DIGITS
+            CMP.B       #$8,D1          ; VALIDATES THAT ADDRESS PROVIDED IS UNDER 6 DIGITS
             BLE         STOREENDADD_1
 
+ENDADDR_OVERFLOW
             ADD.B       #1, LINES_ON_SCREEN
             LEA         TOOLONGADDR,A1          ; INVALID ADDR. TOO LONG
             MOVE.B      #13,D0
@@ -162,7 +160,8 @@ STOREENDADD_1
             ; REJECT ANYTHING OVER $00FFFFFF
             ; NEED TO ENSURE THAT FIRST 2 DIGITS ARE 0'S
             MOVE.L      D3, D2
-
+            CMP.L       #$00FFFFFF,D2
+            BGT         ENDADDR_OVERFLOW    ; CATCH ADDRESS GREATER THAN FFFFFF
             ROL.L       #$08,D2  ; MOVE FIRST 2 DIGITS IN PLACE OF LAST 2 DIGITS
             AND.L       #$000000FF,D2   ; UPDATE ADD BITS TO 0 EXCEPT FOR LAST 2
             CMP.B       #$00,D2       ; FIRST 2 DIGITS OF START ADDRESS MUST BE 0'S
@@ -172,6 +171,7 @@ STOREEAADDRGOODSOFAR
             ; CHECK IF NEXT 2 DIGITS ARE 00'S, IF NOT, SKIP CHECK OF BEING UNDER 9000
             CLR         D2
             MOVE.L      D3, D2
+            
             ROL.L       #$08,D2  ; MOVE FIRST 2 DIGITS IN PLACE OF LAST 2 DIGITS
             ROL.L       #$08,D2  ; MOVE FIRST 2 DIGITS IN PLACE OF LAST 2 DIGITS
             AND.L       #$000000FF,D2   ; UPDATE ADD BITS TO 0 EXCEPT FOR LAST 2
@@ -540,7 +540,7 @@ ASCII2HEX:  LEA         (A1),A2         ; COPY INPUT ADDR TO A2
             JSR         A2HLOOP         ; START THE LOOP THAT CONVERT EACH STRING CHAR TO HEX
             CLR         D2              ; CLEAR D2 AFTER SUBROUTINE
             RTS
-
+            
 RmLeadZero  SUB.B       #1,D1           ; REMOVE LEADING ZERO BEFORE CONVERTING TO HEX
             CMP.B       #$30,(A2)+
             BEQ         RmLeadZero
@@ -582,15 +582,11 @@ D2H2        CMP.B       #$41,D2
 NEXT_CHAR   BRA         A2HLOOP         ; CONTINUE CONVERTING
 EXIT_A2HL   RTS                         ; EXIT A2H LOOP
 
-A2H_ERR     LEA         ERRMESS,A1      ; DISPLAY  ERR MESSAGE. CHARACTER NOT IN [1..9] AND [A,Z]
-            *MOVE.B      #14,D0
-            *TRAP        #15
+A2H_ERR     
+            CLR.L       D3
+            MOVE.L      #$0FFFFFFF,D3
             RTS
-DISP        LEA         (A3),A1 ; OUTPUT STRING IN HEX
-            MOVE.B      #13,D0
-            TRAP        #15
-            RTS
-
+            
 * ================== END OF SUBROUTINE TO CONVERT ASCII TO HEX ================== *
 
 
@@ -4357,31 +4353,6 @@ NEWLINERESPONSE    DC.B    '',0
 LINES_ON_SCREEN DS.L    1
 EXIT_MESS       DC.B    'PROGRAM EXIT!',CR,LF,0
 
-TEAMNAME
-            DC.B        ' |---------------------------- version '
-            DC.B        ' 6.2.6 --------------------------------|',CR,LF
-            DC.B        ' |                                     '
-            DC.B        '                                       |',CR,LF
-            DC.B        ' | HH     HH EEEEEEE XX     XX SSSSSSS '
-            DC.B        'PPPPPPPP EEEEEEE       A       KK   KK |',CR,LF    
-            DC.B        ' | HH     HH EE        XX  XX  SS   SS ' 
-            DC.B        'PP    PP EE           AAA      KK  KK  |',CR,LF
-            DC.B        ' | HH     HH EE         XXXX   SS      '       
-            DC.B        'PP    PP EE          AA AA     KK KK   |',CR,LF
-            DC.B        ' | HHHHHHHHH EEEEEEE     XX    SSSSSSS ' 
-            DC.B        'PPPPPPPP EEEEEEE    AA   AA    KKKK    |',CR,LF       
-            DC.B        ' | HH     HH EE         XXXX        SS '
-            DC.B        'PP       EE        AAAAAAAAA   KK KK   |',CR,LF      
-            DC.B        ' | HH     HH EE        XX  XX  SS   SS '
-            DC.B        'PP       EE       AA       AA  KK  KK  |',CR,LF     
-            DC.B        ' | HH     HH EEEEEEE XX     XX SSSSSSS ' 
-            DC.B        'PP       EEEEEEE AA         AA KK   KK |',CR,LF
-            DC.B        ' |                                     '
-            DC.B        '                                       |',CR,LF
-            DC.B        ' |                 Mitchell Dang, Julia'
-            DC.B        ' Brosseau, Andrew Goupinets            |',CR,LF
-            DC.B        ' |-------------------------------------'
-            DC.B        '---------------------------------------|',CR,LF,0
             
 
 
@@ -4398,6 +4369,7 @@ TEAMNAME
 *~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
+
 
 
 
