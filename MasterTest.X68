@@ -1,8 +1,8 @@
 *-----------------------------------------------------------
-* Title      :
-* Written by :
-* Date       :
-* Description:
+* Title      : Master test
+* Written by : Hexspeak
+* Date       : Last update Aug. 18, 2020
+* Description: Extra  tests for program
 *-----------------------------------------------------------
     ORG    $9000
 START:                  ; first instruction of program

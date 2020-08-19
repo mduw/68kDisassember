@@ -1,8 +1,9 @@
 *-----------------------------------------------------------
-* Title      :
-* Written by :
-* Date       :
-* Description:
+* Title      : Master test 2
+* Written by : Hexspeak
+* Date       : Last update Aug. 18, 2020
+* Description: Mixture of tests for various groups. More complicated than
+*              MasterTest.X68 
 *-----------------------------------------------------------
         ORG         $9000
 ;ADDR1 EQU       $5000
